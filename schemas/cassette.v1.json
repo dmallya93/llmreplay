@@ -15,7 +15,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "request_ref", "response_ref"],
+        "required": ["id", "request_ref", "response_ref", "static_hash"],
         "properties": {
           "id": { "type": "string" },
           "request_ref": { "type": "string" },

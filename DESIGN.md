@@ -9,7 +9,7 @@
 |---|---|---|---|
 | C0 OSS bootstrap | **done** | `3056aca` | Repo + SPEC + CLI + governance + CI |
 | C1 Field + storage | **done** | `6f35e2e` | match/hash + cassette store |
-| C2 Proxy capture | planned | | |
+| C2 Proxy capture | **done** | pending | allowlisted proxy record/replay |
 | C3 Scrub + profiles | planned | | |
 | C4 CLI core + doctor/bundle | planned | | |
 | C5 Free CCR+Ollama stack | planned | | |

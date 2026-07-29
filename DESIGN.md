@@ -7,7 +7,7 @@
 
 | Chunk | Status | Commit | Notes |
 |---|---|---|---|
-| C0 OSS bootstrap | **done** | pending push | Repo + SPEC + CLI + governance + CI |
+| C0 OSS bootstrap | **done** | `3056aca` | Repo + SPEC + CLI + governance + CI |
 | C1 Field + storage | planned | | |
 | C2 Proxy capture | planned | | |
 | C3 Scrub + profiles | planned | | |

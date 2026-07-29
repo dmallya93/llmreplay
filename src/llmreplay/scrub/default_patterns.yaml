@@ -1,0 +1,39 @@
+scrub_header_keys:
+  - authorization
+  - x-api-key
+  - api-key
+  - cookie
+  - set-cookie
+
+# Whole-string scrub when these object keys appear (case-insensitive).
+# Starter JSON-path pack without a full JSONPath engine (SPEC S2).
+sensitive_keys:
+  - api_key
+  - apikey
+  - access_token
+  - refresh_token
+  - password
+  - secret
+  - client_secret
+  - private_key
+  - authorization
+
+# Dotted paths from object root (e.g. body.messages.0.content). Empty = none.
+scrub_paths: []
+
+# Regexes applied to string values (JSON walk) and raw text
+secret_regexes:
+  - name: jwt
+    pattern: "eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+"
+  - name: aws_access_key
+    pattern: "AKIA[0-9A-Z]{16}"
+  - name: github_pat
+    pattern: "gh[pousr]_[A-Za-z0-9_]{20,}"
+  - name: openai_sk
+    pattern: "sk-[A-Za-z0-9]{20,}"
+  - name: slack_token
+    pattern: "xox[baprs]-[A-Za-z0-9-]{10,}"
+  - name: pem_block
+    pattern: "-----BEGIN (?:RSA )?PRIVATE KEY-----[\\s\\S]+?-----END (?:RSA )?PRIVATE KEY-----"
+  - name: bearer_header
+    pattern: "(?i)Bearer\\s+[A-Za-z0-9._\\-]+"

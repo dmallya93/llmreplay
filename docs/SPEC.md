@@ -33,10 +33,12 @@ See [DESIGN.md](../DESIGN.md) for motivation, chunks, validation, and customer/s
 
 ## S2. Scrub and stream redact
 
-- MUST redact at stream ingress before any disk/log buffer.
+- MUST scrub request/response **before cassette write** and before any log that includes body content.
+- For buffered JSON proxy requests (current default), MUST apply regex + sensitive-key scrub to the normalized event immediately after parse; raw upstream forward may keep original bytes.
+- Full SSE **byte-stream** ingress redact MUST land with streaming capture (S6); until then, synthesized SSE from scrubbed final messages is sufficient.
 - Placeholder: `«REDACTED:hmac:<hex16>»` = first 16 hex chars of `HMAC-SHA-256(key, secret_utf8)`.
-- HMAC key in OS keyring or `LLMREPLAY_HMAC_KEY`; MUST NOT appear in cassettes/default bundles/logs.
-- Detection: `scrub_patterns.yaml` JSONPaths + regex (JWT, `AKIA`, `ghp_`, `sk-`, PEM, `xox*`); residual detector fails `strict`/`ci` record if secrets remain.
+- HMAC key from `LLMREPLAY_HMAC_KEY` (required in CI) or OS keyring (doctor surface, C4+); MUST NOT appear in cassettes/default bundles/logs. Local-only ephemeral fallback is allowed when unset.
+- Detection: packaged `default_patterns.yaml` — `sensitive_keys` + dotted `scrub_paths` (starter path pack) + regex (JWT, `AKIA`, `ghp_`, `sk-`, PEM, `xox*`); residual detector **MUST fail** `strict`/`ci` record (HTTP 422 `llmreplay_secret`, exit `SECRET_SCRUB_OR_LIMIT`) if secrets remain after scrub. `local` MAY warn/allow.
 
 ## S3. Step-level taint
 

@@ -1,0 +1,14 @@
+version: 1
+defaults:
+  ignore:
+    - usage
+    - latency_ms
+    - x-request-id
+    - date
+profiles:
+  local:
+    ignore_drift: warn
+  ci:
+    ignore_drift: fail
+  strict:
+    ignore_drift: fail

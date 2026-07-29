@@ -19,6 +19,8 @@ class ProxyConfig(BaseModel):
     strict_routes: bool = True
     host: str = "127.0.0.1"
     port: int = Field(default=7432, ge=1, le=65535)
+    profile: str = "local"
+    config_path: Path | None = None
 
     @model_validator(mode="after")
     def _validate_record_upstream(self) -> ProxyConfig:

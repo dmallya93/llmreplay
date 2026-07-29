@@ -107,6 +107,14 @@ def proxy(
     ] = None,
     host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
     port: Annotated[int, typer.Option("--port")] = 7432,
+    profile: Annotated[
+        str,
+        typer.Option("--profile", help="llmreplay.yaml profile (local|ci|strict|…)"),
+    ] = "local",
+    config_file: Annotated[
+        Path | None,
+        typer.Option("--config", help="Path to llmreplay.yaml"),
+    ] = None,
 ) -> None:
     """Run the local allowlisted LLM proxy (SPEC S5)."""
     try:
@@ -116,6 +124,8 @@ def proxy(
             upstream_base=upstream,
             host=host,
             port=port,
+            profile=profile,
+            config_path=config_file,
         )
     except (ValidationError, ValueError) as exc:
         typer.echo(str(exc), err=True)
@@ -125,8 +135,8 @@ def proxy(
     config.cassette_dir.mkdir(parents=True, exist_ok=True)
     asgi = create_app(config=config)
     typer.echo(
-        f"llmreplay proxy mode={config.mode} cassette={config.cassette_dir} "
-        f"http://{config.host}:{config.port}"
+        f"llmreplay proxy mode={config.mode} profile={config.profile} "
+        f"cassette={config.cassette_dir} http://{config.host}:{config.port}"
     )
     uvicorn.run(asgi, host=config.host, port=config.port, log_level="info")
 

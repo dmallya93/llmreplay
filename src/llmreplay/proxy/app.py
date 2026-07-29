@@ -12,10 +12,12 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
+from llmreplay.config.profiles import LLMReplayFileConfig, load_llmreplay_yaml
 from llmreplay.core.match import match_key
 from llmreplay.proxy.config import ProxyConfig, ProxyMode
 from llmreplay.proxy.normalize import normalize_request_event
 from llmreplay.proxy.routes import ROUTE_DENIED_BODY, is_allowed
+from llmreplay.scrub.engine import Scrubber, residual_hits_in_payload
 from llmreplay.store.cassette import CassetteStore
 
 Mode = ProxyMode
@@ -40,12 +42,20 @@ class ProxyState:
         upstream_base: str | None,
         strict_routes: bool = True,
         http_client_factory: HttpClientFactory | None = None,
+        scrubber: Scrubber | None = None,
+        profile: str = "local",
+        file_config: LLMReplayFileConfig | None = None,
+        fail_on_residual_secrets: bool = False,
     ) -> None:
         self.mode = mode
         self.cassette = cassette
         self.upstream_base = (upstream_base or "").rstrip("/")
         self.strict_routes = strict_routes
         self.http_client_factory = http_client_factory or (lambda: httpx.AsyncClient(timeout=60.0))
+        self.scrubber = scrubber or Scrubber()
+        self.profile = profile
+        self.file_config = file_config or LLMReplayFileConfig()
+        self.fail_on_residual_secrets = fail_on_residual_secrets
         self._hash_index: dict[str, dict[str, Any]] | None = None
 
     def rebuild_index(self) -> dict[str, dict[str, Any]]:
@@ -72,6 +82,8 @@ def create_app(
     upstream_base: str | None = None,
     http_client_factory: HttpClientFactory | None = None,
     config: ProxyConfig | None = None,
+    scrubber: Scrubber | None = None,
+    file_config: LLMReplayFileConfig | None = None,
 ) -> Starlette:
     if config is None:
         if mode is None or cassette_dir is None:
@@ -81,18 +93,32 @@ def create_app(
             cassette_dir=cassette_dir,
             upstream_base=upstream_base,
         )
+    yaml_cfg = file_config or load_llmreplay_yaml(config.config_path)
+    profile = yaml_cfg.resolved_profile(config.profile)
+    fail_residual = yaml_cfg.fail_on_residual_secrets(config.profile)
+    built_scrubber = scrubber or Scrubber(
+        extra_scrub_paths=yaml_cfg.merged_scrub_paths(config.profile),
+    )
     state = ProxyState(
         mode=config.mode,
         cassette=CassetteStore(config.cassette_dir),
         upstream_base=config.upstream_base,
         strict_routes=config.strict_routes,
         http_client_factory=http_client_factory,
+        scrubber=built_scrubber,
+        profile=config.profile,
+        file_config=yaml_cfg,
+        fail_on_residual_secrets=fail_residual,
     )
+    # Touch resolved profile so sticky/ci validation runs at startup.
+    _ = profile
     if config.mode == "replay":
         state.rebuild_index()
 
     async def healthz(_request: Request) -> JSONResponse:
-        return JSONResponse({"ok": True, "mode": state.mode})
+        return JSONResponse(
+            {"ok": True, "mode": state.mode, "profile": state.profile},
+        )
 
     async def models(request: Request) -> Response:
         if state.mode == "replay":
@@ -103,7 +129,7 @@ def create_app(
                 headers=dict(request.headers),
                 body=None,
             )
-            key = match_key(event)
+            key = match_key(state.scrubber.scrub_event(event))
             if key in state.hash_index:
                 return JSONResponse(state.hash_index[key])
             return JSONResponse(SYNTHETIC_MODELS)
@@ -118,6 +144,8 @@ def create_app(
                 {"error": {"type": "llmreplay_protocol", "message": "invalid JSON body"}},
                 status_code=400,
             )
+        # Scrub runs on the normalized event before cassette write (SPEC S2).
+        # Upstream still receives the original bytes in record mode.
         return await _forward_or_record(request, body=body, raw=raw)
 
     async def _forward_or_record(
@@ -137,7 +165,8 @@ def create_app(
             headers=dict(request.headers),
             body=body,
         )
-        key = match_key(event)
+        scrubbed_event = state.scrubber.scrub_event(event)
+        key = match_key(scrubbed_event)
 
         if state.mode == "replay":
             hit = state.hash_index.get(key)
@@ -183,9 +212,30 @@ def create_app(
             resp_body = {"raw_text": upstream.text}
 
         if upstream.status_code < 400:
+            stored_response = resp_body if isinstance(resp_body, dict) else {"data": resp_body}
+            scrubbed_response = state.scrubber.scrub_response(stored_response)
+            residual = residual_hits_in_payload(
+                {"request": scrubbed_event, "response": scrubbed_response},
+                state.scrubber.patterns,
+            )
+            if residual and state.fail_on_residual_secrets:
+                return JSONResponse(
+                    {
+                        "error": {
+                            "type": "llmreplay_secret",
+                            "message": (
+                                "422 LLMREPLAY_SECRET — residual secrets after scrub; "
+                                "refusing cassette write (ci/strict)"
+                            ),
+                            "patterns": residual,
+                            "profile": state.profile,
+                        }
+                    },
+                    status_code=422,
+                )
             state.cassette.append_transaction(
-                request=event,
-                response=resp_body if isinstance(resp_body, dict) else {"data": resp_body},
+                request=scrubbed_event,
+                response=scrubbed_response,
                 static_hash=key,
             )
             state.rebuild_index()

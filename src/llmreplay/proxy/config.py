@@ -21,12 +21,17 @@ class ProxyConfig(BaseModel):
     port: int = Field(default=7432, ge=1, le=65535)
     profile: str = "local"
     config_path: Path | None = None
+    free_mode: bool = False
+    free_key_store: Path | None = None
+    ollama_model: str = "qwen2.5-coder:latest"
 
     @model_validator(mode="after")
     def _validate_record_upstream(self) -> ProxyConfig:
         if self.upstream_base is not None:
             cleaned = self.upstream_base.strip().rstrip("/")
             object.__setattr__(self, "upstream_base", cleaned or None)
+        if self.free_mode and self.mode == "record" and not self.upstream_base:
+            object.__setattr__(self, "upstream_base", "http://127.0.0.1:3456")
         if self.mode == "record" and not self.upstream_base:
             raise ValueError("upstream_base is required when mode=record")
         return self

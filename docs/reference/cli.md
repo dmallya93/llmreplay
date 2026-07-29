@@ -32,6 +32,10 @@ Options:
 
 List stable process exit codes.
 
+### `llmreplay keys`
+
+Free localhost API keys.
+
 ### `llmreplay mark-ignore`
 
 Append ignore fields to llmreplay.yaml (explicit only; never auto).
@@ -73,6 +77,8 @@ Options:
 - `--port`: 
 - `--profile`: 
 - `--config`: 
+- `--free`: Free stack: default upstream CCR + cassette test_stack
+- `--free-key-store`: 
 
 ### `llmreplay replay`
 
@@ -85,6 +91,12 @@ Options:
 - `--profile`: 
 - `--config`: 
 - `--check`: Validate cassette for offline replay and exit
+- `--free`: Free-mode replay (still offline; documents free path)
+- `--free-key-store`: 
+
+### `llmreplay test-stack`
+
+Free CCR+Ollama test-stack (SPEC S8).
 
 ### `llmreplay validate`
 

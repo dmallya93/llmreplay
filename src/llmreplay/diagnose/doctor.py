@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from llmreplay import __version__
 from llmreplay.proxy.routes import is_allowed
+from llmreplay.teststack.status import status as stack_status
 
 
 class DoctorCheck(BaseModel):
@@ -130,22 +131,27 @@ def run_doctor(
             next=None if hmac_set else "Export LLMREPLAY_HMAC_KEY for stable scrub placeholders",
         )
     )
+    stack = stack_status()
     checks.append(
         DoctorCheck(
             id="test_stack",
-            ok=False,
-            detail="CCR+Ollama stack not configured (ships in C5)",
-            next="Wait for C5 or use a real upstream with `llmreplay proxy --mode record`",
+            ok=stack.healthy,
+            detail=(
+                "Ollama reachable"
+                if stack.healthy
+                else "CCR+Ollama stack unhealthy (optional until free-mode use)"
+            ),
+            next=stack.next,
         )
     )
 
-    failing = [c for c in checks if not c.ok and c.id != "test_stack"]
-    # test_stack is expected-pending until C5 — does not fail doctor overall.
+    soft = {"test_stack", "hmac_key", "agent_env"}
+    failing = [c for c in checks if not c.ok and c.id not in soft]
     ok = not failing
     next_action = (
         failing[0].next or failing[0].detail
         if failing
-        else "Run `llmreplay record` / `llmreplay replay` (C4). Free stack lands in C5."
+        else "Run record/replay. Free stack: `llmreplay test-stack status`."
     )
     return DoctorReport(
         llmreplay_version=__version__,

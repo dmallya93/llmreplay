@@ -1,18 +1,26 @@
-# Quickstart (full free-stack path lands in C5)
+# Quickstart
 
 ```bash
+python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-llmreplay version
 llmreplay doctor
-llmreplay exit-codes
-pytest -q
 ```
 
-When C5 ships:
+## Fake upstream (CI / no Ollama)
+
+```bash
+./scripts/smoke.sh
+```
+
+## Free stack (local Ollama + CCR)
 
 ```bash
 llmreplay test-stack up
-llmreplay keys create --free
-llmreplay record --free -- claude "..."
-llmreplay replay cassette/ --profile local --free -- claude "..."
+llmreplay test-stack status          # exit 4 if Ollama down
+llmreplay keys create --free --print-env
+# eval printed exports, then:
+llmreplay record --free --cassette .llmreplay/demo
+llmreplay replay --free --cassette .llmreplay/demo
 ```
+
+Details: [free-test-stack.md](free-test-stack.md).

@@ -137,3 +137,10 @@ class CassetteStore:
             manifest.transactions.append(tx)
             self._write_manifest_unlocked(manifest)
         return tx_id
+
+    def set_test_stack(self, fingerprint: dict[str, Any]) -> None:
+        """Record free-stack fingerprint on the cassette header (SPEC S8)."""
+        with _exclusive_lock(self.lock_path):
+            manifest = self.load_manifest()
+            manifest.test_stack = dict(fingerprint)
+            self._write_manifest_unlocked(manifest)

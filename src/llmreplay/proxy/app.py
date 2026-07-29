@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,7 @@ from starlette.routing import Route
 from llmreplay.config.profiles import LLMReplayFileConfig, load_llmreplay_yaml
 from llmreplay.core.match import match_key
 from llmreplay.proxy.config import ProxyConfig, ProxyMode
+from llmreplay.proxy.free_auth import enforce_free_key
 from llmreplay.proxy.normalize import normalize_request_event
 from llmreplay.proxy.routes import ROUTE_DENIED_BODY, is_allowed
 from llmreplay.scrub.engine import Scrubber, residual_hits_in_payload
@@ -46,6 +48,9 @@ class ProxyState:
         profile: str = "local",
         file_config: LLMReplayFileConfig | None = None,
         fail_on_residual_secrets: bool = False,
+        free_mode: bool = False,
+        free_key_store: Path | None = None,
+        ollama_model: str = "qwen2.5-coder:latest",
     ) -> None:
         self.mode = mode
         self.cassette = cassette
@@ -56,6 +61,9 @@ class ProxyState:
         self.profile = profile
         self.file_config = file_config or LLMReplayFileConfig()
         self.fail_on_residual_secrets = fail_on_residual_secrets
+        self.free_mode = free_mode
+        self.free_key_store = free_key_store
+        self.ollama_model = ollama_model
         self._hash_index: dict[str, dict[str, Any]] | None = None
 
     def rebuild_index(self) -> dict[str, dict[str, Any]]:
@@ -109,9 +117,24 @@ def create_app(
         profile=config.profile,
         file_config=yaml_cfg,
         fail_on_residual_secrets=fail_residual,
+        free_mode=config.free_mode,
+        free_key_store=config.free_key_store,
+        ollama_model=config.ollama_model,
     )
     # Touch resolved profile so sticky/ci validation runs at startup.
     _ = profile
+    if config.free_mode and config.mode == "record":
+        digest = hashlib.sha256(
+            f"ccr|{config.ollama_model}|{config.upstream_base}".encode()
+        ).hexdigest()[:16]
+        state.cassette.set_test_stack(
+            {
+                "router": "ccr",
+                "ollama_model": config.ollama_model,
+                "digest": digest,
+                "upstream": config.upstream_base,
+            }
+        )
     if config.mode == "replay":
         state.rebuild_index()
 
@@ -158,6 +181,10 @@ def create_app(
         path = request.url.path
         if not is_allowed(method, path):
             return JSONResponse(ROUTE_DENIED_BODY, status_code=404)
+
+        denied = enforce_free_key(request, store_path=state.free_key_store)
+        if denied is not None:
+            return denied
 
         event = normalize_request_event(
             method=method,

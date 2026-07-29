@@ -21,6 +21,10 @@ from llmreplay.diagnose.why import diagnose_miss, load_request_event
 from llmreplay.proxy.app import create_app
 from llmreplay.proxy.config import ProxyConfig
 from llmreplay.store.cassette import CassetteStore
+from llmreplay.teststack.config import free_mode_env, print_env_exports
+from llmreplay.teststack.keys import FreeKeyStore
+from llmreplay.teststack.lifecycle import stack_down, stack_status, stack_up
+from llmreplay.teststack.models import FreeStackConfig
 
 app = typer.Typer(
     name="llmreplay",
@@ -31,6 +35,12 @@ app = typer.Typer(
 
 docs_app = typer.Typer(help="Documentation generators.")
 app.add_typer(docs_app, name="docs")
+
+test_stack_app = typer.Typer(help="Free CCR+Ollama test-stack (SPEC S8).")
+app.add_typer(test_stack_app, name="test-stack")
+
+keys_app = typer.Typer(help="Free localhost API keys.")
+app.add_typer(keys_app, name="keys")
 
 
 def _footer(code: ExitCode) -> None:
@@ -106,6 +116,8 @@ def _proxy_config(
     port: int,
     profile: str,
     config_file: Path | None,
+    free_mode: bool = False,
+    free_key_store: Path | None = None,
 ) -> ProxyConfig:
     return ProxyConfig(
         mode=mode,  # type: ignore[arg-type]
@@ -115,6 +127,8 @@ def _proxy_config(
         port=port,
         profile=profile,
         config_path=config_file,
+        free_mode=free_mode,
+        free_key_store=free_key_store,
     )
 
 
@@ -150,29 +164,38 @@ def proxy(
 def record(
     cassette: Annotated[Path, typer.Option("--cassette")] = Path(".llmreplay/cassette"),
     upstream: Annotated[
-        str,
+        str | None,
         typer.Option("--upstream", help="Upstream base URL"),
-    ] = "http://127.0.0.1:3456",
+    ] = None,
     host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
     port: Annotated[int, typer.Option("--port")] = 7432,
     profile: Annotated[str, typer.Option("--profile")] = "local",
     config_file: Annotated[Path | None, typer.Option("--config")] = None,
+    free: Annotated[
+        bool,
+        typer.Option("--free", help="Free stack: default upstream CCR + cassette test_stack"),
+    ] = False,
+    free_key_store: Annotated[Path | None, typer.Option("--free-key-store")] = None,
 ) -> None:
     """Start the proxy in record mode (capture upstream traffic into a cassette)."""
     try:
         config = _proxy_config(
             mode="record",
             cassette=cassette,
-            upstream=upstream,
+            upstream=upstream or "http://127.0.0.1:3456",
             host=host,
             port=port,
             profile=profile,
             config_file=config_file,
+            free_mode=free,
+            free_key_store=free_key_store,
         )
     except (ValidationError, ValueError) as exc:
         typer.echo(str(exc), err=True)
         _footer(ExitCode.ROUTE_OR_PROTOCOL)
         raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL) from exc
+    if free:
+        typer.echo("free-mode: upstream defaults to CCR; write test_stack fingerprint")
     _run_proxy(config)
 
 
@@ -187,6 +210,11 @@ def replay(
         bool,
         typer.Option("--check", help="Validate cassette for offline replay and exit"),
     ] = False,
+    free: Annotated[
+        bool,
+        typer.Option("--free", help="Free-mode replay (still offline; documents free path)"),
+    ] = False,
+    free_key_store: Annotated[Path | None, typer.Option("--free-key-store")] = None,
 ) -> None:
     """Start the proxy in replay mode, or `--check` cassette health offline."""
     if check:
@@ -211,6 +239,8 @@ def replay(
             port=port,
             profile=profile,
             config_file=config_file,
+            free_mode=free,
+            free_key_store=free_key_store,
         )
     except (ValidationError, ValueError) as exc:
         typer.echo(str(exc), err=True)
@@ -344,6 +374,95 @@ def docs_gen(
         raise typer.Exit(ExitCode.SCHEMA_OR_REPAIR_REQUIRED)
     write_cli_reference(output, app)
     typer.echo(f"wrote {output}")
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@test_stack_app.command("up")
+def test_stack_up(
+    config_dir: Annotated[
+        Path | None,
+        typer.Option("--config-dir", help="Where to write generated CCR config"),
+    ] = None,
+    model: Annotated[str, typer.Option("--model")] = "qwen2.5-coder:latest",
+) -> None:
+    """Materialize free-stack config and print setup instructions."""
+    cfg = FreeStackConfig(ollama_model=model)
+    if config_dir is not None:
+        cfg = cfg.model_copy(update={"config_dir": config_dir})
+    result = stack_up(cfg)
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+    for line in result.instructions:
+        typer.echo(line)
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@test_stack_app.command("down")
+def test_stack_down(
+    config_dir: Annotated[Path | None, typer.Option("--config-dir")] = None,
+    purge: Annotated[bool, typer.Option("--purge", help="Delete generated files")] = False,
+) -> None:
+    """Tear down generated test-stack files (does not kill Ollama/CCR)."""
+    cfg = FreeStackConfig()
+    if config_dir is not None:
+        cfg = cfg.model_copy(update={"config_dir": config_dir})
+    path = stack_down(cfg, purge=purge)
+    typer.echo(f"test-stack down config_dir={path} purge={purge}")
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@test_stack_app.command("status")
+def test_stack_status_cmd(
+    json_out: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Probe Ollama/CCR/proxy; exit 4 when unhealthy."""
+    report = stack_status()
+    if json_out:
+        typer.echo(json.dumps(report.model_dump(mode="json"), indent=2))
+    else:
+        mark = "healthy" if report.healthy else "unhealthy"
+        typer.echo(f"test-stack {mark} degraded={report.degraded}")
+        for comp in report.components:
+            typer.echo(f"  [{'ok' if comp.ok else 'fail'}] {comp.name}: {comp.detail}")
+        typer.echo(f"next: {report.next}")
+    if report.healthy:
+        _footer(ExitCode.SUCCESS)
+        raise typer.Exit(ExitCode.SUCCESS)
+    _footer(ExitCode.TEST_STACK_UNHEALTHY)
+    raise typer.Exit(ExitCode.TEST_STACK_UNHEALTHY)
+
+
+@keys_app.command("create")
+def keys_create(
+    free: Annotated[
+        bool,
+        typer.Option("--free", help="Create a localhost-only free key"),
+    ] = True,
+    store: Annotated[
+        Path | None,
+        typer.Option("--store", help="Key store path"),
+    ] = None,
+    quota: Annotated[int, typer.Option("--quota")] = 10_000,
+    print_env: Annotated[
+        bool,
+        typer.Option("--print-env", help="Print shell exports for agent wiring"),
+    ] = True,
+    proxy: Annotated[str, typer.Option("--proxy")] = "http://127.0.0.1:7432",
+) -> None:
+    """Create a free localhost key (never write the token into cassettes)."""
+    if not free:
+        typer.echo("only --free keys are supported in C5", err=True)
+        _footer(ExitCode.ROUTE_OR_PROTOCOL)
+        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL)
+    store_path = store or (Path.home() / ".llmreplay" / "free-keys.json")
+    record = FreeKeyStore(store_path).create(quota=quota)
+    payload = record.model_dump(mode="json")
+    typer.echo(json.dumps(payload, indent=2))
+    if print_env:
+        env = free_mode_env(proxy_base=proxy, free_token=record.token)
+        typer.echo(print_env_exports(env))
     _footer(ExitCode.SUCCESS)
     raise typer.Exit(ExitCode.SUCCESS)
 

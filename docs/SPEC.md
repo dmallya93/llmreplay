@@ -79,6 +79,10 @@ Default synthesize valid SSE from final message (same tool IDs / block order). T
 
 `test-stack` healthy → free key → proxy on loopback → agent env → CCR → Ollama. Free key never in cassette.
 
+- `llmreplay test-stack up|down|status` materializes CCR config and probes health; unhealthy → exit `TEST_STACK_UNHEALTHY` (4).
+- `llmreplay keys create --free` issues localhost-only quota keys; refuse non-loopback peers.
+- Degraded mode: Ollama up without CCR MAY use Ollama OpenAI-compatible `/v1` as upstream for Chat Completions.
+
 ## S9–S18
 
 See DESIGN.md Normative SPEC sections for Ollama degraded mode, agent matrix, nested sessions, hooks, hermetic pins, resource limits, profile precedence, compatibility, threat model, concurrency.

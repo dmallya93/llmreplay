@@ -94,6 +94,10 @@ Options:
 - `--free`: Free-mode replay (still offline; documents free path)
 - `--free-key-store`: 
 
+### `llmreplay snapshot`
+
+Workspace filesystem snapshots (SPEC S7).
+
 ### `llmreplay test-stack`
 
 Free CCR+Ollama test-stack (SPEC S8).

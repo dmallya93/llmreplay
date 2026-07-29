@@ -20,6 +20,7 @@ from llmreplay.diagnose.validate import validate_cassette
 from llmreplay.diagnose.why import diagnose_miss, load_request_event
 from llmreplay.proxy.app import create_app
 from llmreplay.proxy.config import ProxyConfig
+from llmreplay.snapshot.engine import create_snapshot, extensions_fs_payload, restore_snapshot
 from llmreplay.store.cassette import CassetteStore
 from llmreplay.teststack.config import free_mode_env, print_env_exports
 from llmreplay.teststack.keys import FreeKeyStore
@@ -41,6 +42,9 @@ app.add_typer(test_stack_app, name="test-stack")
 
 keys_app = typer.Typer(help="Free localhost API keys.")
 app.add_typer(keys_app, name="keys")
+
+snapshot_app = typer.Typer(help="Workspace filesystem snapshots (SPEC S7).")
+app.add_typer(snapshot_app, name="snapshot")
 
 
 def _footer(code: ExitCode) -> None:
@@ -463,6 +467,39 @@ def keys_create(
     if print_env:
         env = free_mode_env(proxy_base=proxy, free_token=record.token)
         typer.echo(print_env_exports(env))
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@snapshot_app.command("create")
+def snapshot_create(
+    workspace: Annotated[Path, typer.Option("--workspace")] = Path("."),
+    dest: Annotated[Path, typer.Option("--dest")] = Path(".llmreplay/cassette/snapshots"),
+    snapshot_id: Annotated[str, typer.Option("--id")] = "snap",
+) -> None:
+    """Capture a denylisted workspace snapshot (tar.zst + json)."""
+    meta = create_snapshot(workspace, dest, snapshot_id=snapshot_id)
+    typer.echo(json.dumps(meta.model_dump(mode="json"), indent=2))
+    typer.echo(json.dumps({"extensions.fs": extensions_fs_payload(meta)}, indent=2))
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@snapshot_app.command("restore")
+def snapshot_restore(
+    snapshot_id: Annotated[str, typer.Option("--id")] = "snap",
+    dest: Annotated[Path, typer.Option("--dest")] = Path(".llmreplay/cassette/snapshots"),
+    workspace: Annotated[Path, typer.Option("--workspace")] = Path("."),
+    force: Annotated[bool, typer.Option("--force")] = False,
+) -> None:
+    """Restore a snapshot into a workspace root."""
+    try:
+        meta = restore_snapshot(dest, snapshot_id, workspace, force=force)
+    except (OSError, RuntimeError, PermissionError) as exc:
+        typer.echo(str(exc), err=True)
+        _footer(ExitCode.SCHEMA_OR_REPAIR_REQUIRED)
+        raise typer.Exit(ExitCode.SCHEMA_OR_REPAIR_REQUIRED) from exc
+    typer.echo(json.dumps(meta.model_dump(mode="json"), indent=2))
     _footer(ExitCode.SUCCESS)
     raise typer.Exit(ExitCode.SUCCESS)
 

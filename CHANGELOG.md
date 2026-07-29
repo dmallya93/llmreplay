@@ -8,6 +8,7 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/). Cassette `sc
 
 ### Added
 
+- C4: CLI `record`/`replay`/`why`/`mark-ignore`/`mark-live`/`validate`/`bundle`/`docs gen`; expanded `doctor`; troubleshooting + generated CLI reference.
 - C3: HMAC scrub engine, `llmreplay.yaml` profiles (`local`/`ci`/`strict`), residual-secret refuse on ci/strict, proxy `--profile`/`--config`.
 - C2: Allowlisted local proxy (record/replay) for Messages, Chat Completions, Responses.
 - Standards: Pydantic-first coding standards + cheap-model-only review policy (no Opus for routine review).

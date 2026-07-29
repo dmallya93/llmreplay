@@ -11,7 +11,7 @@
 | C1 Field + storage | **done** | `6f35e2e` | match/hash + cassette store |
 | C2 Proxy capture | **done** | `23da04d` | allowlisted proxy record/replay |
 | C3 Scrub + profiles | **done** | `3f2486f` | HMAC scrub, residual fail ci/strict, yaml profiles |
-| C4 CLI core + doctor/bundle | planned | | |
+| C4 CLI core + doctor/bundle | **done** | (pending commit) | record/replay/why/doctor/validate/bundle |
 | C5 Free CCR+Ollama stack | planned | | |
 | C6 FS snapshots | planned | | |
 | C7 Hooks | planned | | |

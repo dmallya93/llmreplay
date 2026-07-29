@@ -22,6 +22,8 @@ jobs:
           pip install -e ".[dev]"
       - name: Ruff
         run: ruff check src tests
+      - name: Docs gen --check
+        run: python -m llmreplay.cli.main docs gen --check --output docs/reference/cli.md
       - name: Pytest (hermetic — no paid APIs; no network required)
         run: pytest -q
         env:

@@ -89,9 +89,9 @@ def test_cassette_atomic_manifest(tmp_path: Path) -> None:
         static_hash=match_key({"model": "m"}),
     )
     manifest = store.load_manifest()
-    assert manifest["schema_version"] == 1
-    assert len(manifest["transactions"]) == 1
-    assert manifest["transactions"][0]["id"] == tx
+    assert manifest.schema_version == 1
+    assert len(manifest.transactions) == 1
+    assert manifest.transactions[0].id == tx
     assert (store.root / "requests" / f"{tx}.json").is_file()
     # schema-required keys present
     raw = json.loads(store.manifest_path.read_text(encoding="utf-8"))

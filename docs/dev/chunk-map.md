@@ -4,7 +4,8 @@
 |---|---|---|
 | C0 | `llmreplay.cli`, `llmreplay.core.exit_codes` | README, SPEC, DESIGN, SUPPORT |
 | C1 | `llmreplay.core.match`, `llmreplay.store` | concepts/field-classes, cassette schema |
-| C2 | `llmreplay.proxy` | architecture proxy section |
+| C2 | `llmreplay.proxy` | architecture proxy section, ProxyConfig |
+| standards | `store/models`, `proxy/config` | coding-standards.md |
 | C3 | `llmreplay.scrub`, profiles | llmreplay-yaml reference |
 | C4 | CLI record/replay/why/doctor/bundle | quickstart stub, troubleshooting |
 | C5 | `llmreplay.teststack`, keys | free-test-stack.md, examples |

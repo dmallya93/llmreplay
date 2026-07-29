@@ -40,12 +40,8 @@ def sort_tool_blocks(message: dict[str, Any]) -> dict[str, Any]:
         msg["content"] = others + tool_uses
         return msg
 
-    tool_results = [
-        b for b in content if isinstance(b, dict) and b.get("type") == "tool_result"
-    ]
-    others = [
-        b for b in content if not (isinstance(b, dict) and b.get("type") == "tool_result")
-    ]
+    tool_results = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_result"]
+    others = [b for b in content if not (isinstance(b, dict) and b.get("type") == "tool_result")]
     if len(tool_results) > 1:
         # tool_result has no name/input — sort by tool_use_id only (SPEC degenerates).
         tool_results.sort(key=lambda b: str(b.get("tool_use_id", "")))

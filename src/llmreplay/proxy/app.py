@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import httpx
 from starlette.applications import Starlette
@@ -13,11 +13,12 @@ from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
 from llmreplay.core.match import match_key
+from llmreplay.proxy.config import ProxyConfig, ProxyMode
 from llmreplay.proxy.normalize import normalize_request_event
 from llmreplay.proxy.routes import ROUTE_DENIED_BODY, is_allowed
 from llmreplay.store.cassette import CassetteStore
 
-Mode = Literal["record", "replay"]
+Mode = ProxyMode
 
 SYNTHETIC_MODELS = {
     "object": "list",
@@ -44,22 +45,16 @@ class ProxyState:
         self.cassette = cassette
         self.upstream_base = (upstream_base or "").rstrip("/")
         self.strict_routes = strict_routes
-        self.http_client_factory = http_client_factory or (
-            lambda: httpx.AsyncClient(timeout=60.0)
-        )
+        self.http_client_factory = http_client_factory or (lambda: httpx.AsyncClient(timeout=60.0))
         self._hash_index: dict[str, dict[str, Any]] | None = None
 
     def rebuild_index(self) -> dict[str, dict[str, Any]]:
         index: dict[str, dict[str, Any]] = {}
         manifest = self.cassette.load_manifest()
-        for tx in manifest.get("transactions", []):
-            static_hash = tx.get("static_hash")
-            resp_ref = tx.get("response_ref")
-            if not static_hash or not resp_ref:
-                continue
-            path = self.cassette.root / resp_ref
+        for tx in manifest.transactions:
+            path = self.cassette.root / tx.response_ref
             if path.is_file():
-                index[static_hash] = json.loads(path.read_text(encoding="utf-8"))
+                index[tx.static_hash] = json.loads(path.read_text(encoding="utf-8"))
         self._hash_index = index
         return index
 
@@ -72,18 +67,28 @@ class ProxyState:
 
 def create_app(
     *,
-    mode: Mode,
-    cassette_dir: Path,
+    mode: Mode | None = None,
+    cassette_dir: Path | None = None,
     upstream_base: str | None = None,
     http_client_factory: HttpClientFactory | None = None,
+    config: ProxyConfig | None = None,
 ) -> Starlette:
+    if config is None:
+        if mode is None or cassette_dir is None:
+            raise ValueError("config or (mode, cassette_dir) required")
+        config = ProxyConfig(
+            mode=mode,
+            cassette_dir=cassette_dir,
+            upstream_base=upstream_base,
+        )
     state = ProxyState(
-        mode=mode,
-        cassette=CassetteStore(cassette_dir),
-        upstream_base=upstream_base,
+        mode=config.mode,
+        cassette=CassetteStore(config.cassette_dir),
+        upstream_base=config.upstream_base,
+        strict_routes=config.strict_routes,
         http_client_factory=http_client_factory,
     )
-    if mode == "replay":
+    if config.mode == "replay":
         state.rebuild_index()
 
     async def healthz(_request: Request) -> JSONResponse:
@@ -163,9 +168,7 @@ def create_app(
             )
         url = f"{state.upstream_base}{path}"
         headers = {
-            k: v
-            for k, v in request.headers.items()
-            if k.lower() not in {"host", "content-length"}
+            k: v for k, v in request.headers.items() if k.lower() not in {"host", "content-length"}
         }
         async with state.http_client_factory() as client:
             upstream = await client.request(

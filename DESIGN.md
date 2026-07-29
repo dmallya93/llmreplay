@@ -19,7 +19,9 @@
 | C9 Agent parity | planned | | |
 | C10 Migrate + release | planned | | |
 
-**Rule:** Update this table in the same PR that completes a chunk. Every chunk needs tests + multi-model review before push.
+**Rule:** Update this table in the same PR that completes a chunk. Every chunk needs tests + **cheap-model** review before push (see [docs/dev/coding-standards.md](docs/dev/coding-standards.md); **no Opus for routine review**).
+
+**Coding:** Pydantic v2 at boundaries; typed APIs; Ruff-clean. Agents must follow coding-standards.md.
 
 ---
 

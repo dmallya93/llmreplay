@@ -29,11 +29,7 @@ def normalize_request_event(
     body: Any,
 ) -> dict[str, Any]:
     """Build the event dict used for match_key (auth headers dropped)."""
-    clean_headers = {
-        k.lower(): v
-        for k, v in headers.items()
-        if k.lower() not in _DROP_HEADERS
-    }
+    clean_headers = {k.lower(): v for k, v in headers.items() if k.lower() not in _DROP_HEADERS}
     event: dict[str, Any] = {
         "method": method.upper(),
         "path": path,

@@ -9,10 +9,12 @@ from typing import Annotated
 
 import typer
 import uvicorn
+from pydantic import ValidationError
 
 from llmreplay import __version__
 from llmreplay.core.exit_codes import EXIT_CODE_HELP, ExitCode
 from llmreplay.proxy.app import create_app
+from llmreplay.proxy.config import ProxyConfig
 from llmreplay.proxy.routes import is_allowed
 
 app = typer.Typer(
@@ -107,19 +109,26 @@ def proxy(
     port: Annotated[int, typer.Option("--port")] = 7432,
 ) -> None:
     """Run the local allowlisted LLM proxy (SPEC S5)."""
-    if mode not in {"record", "replay"}:
-        typer.echo("mode must be record or replay", err=True)
+    try:
+        config = ProxyConfig(
+            mode=mode,  # type: ignore[arg-type]
+            cassette_dir=cassette,
+            upstream_base=upstream,
+            host=host,
+            port=port,
+        )
+    except (ValidationError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
         _footer(ExitCode.ROUTE_OR_PROTOCOL)
-        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL)
-    if mode == "record" and not upstream:
-        typer.echo("--upstream is required in record mode", err=True)
-        _footer(ExitCode.ROUTE_OR_PROTOCOL)
-        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL)
+        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL) from exc
 
-    cassette.mkdir(parents=True, exist_ok=True)
-    asgi = create_app(mode=mode, cassette_dir=cassette, upstream_base=upstream)  # type: ignore[arg-type]
-    typer.echo(f"llmreplay proxy mode={mode} cassette={cassette} http://{host}:{port}")
-    uvicorn.run(asgi, host=host, port=port, log_level="info")
+    config.cassette_dir.mkdir(parents=True, exist_ok=True)
+    asgi = create_app(config=config)
+    typer.echo(
+        f"llmreplay proxy mode={config.mode} cassette={config.cassette_dir} "
+        f"http://{config.host}:{config.port}"
+    )
+    uvicorn.run(asgi, host=config.host, port=config.port, log_level="info")
 
 
 if __name__ == "__main__":

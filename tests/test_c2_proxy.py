@@ -16,6 +16,7 @@ from typer.testing import CliRunner
 from llmreplay.cli.main import app
 from llmreplay.proxy.app import create_app
 from llmreplay.proxy.routes import is_allowed
+from llmreplay.store.cassette import CassetteStore
 
 runner = CliRunner()
 
@@ -133,8 +134,9 @@ async def test_record_then_replay(tmp_path: Path) -> None:
         assert r_resp.status_code == 200
 
     assert (cassette / "cassette.json").is_file()
-    manifest = json.loads((cassette / "cassette.json").read_text(encoding="utf-8"))
-    assert len(manifest["transactions"]) >= 3
+    store = CassetteStore(cassette)
+    manifest = store.load_manifest()
+    assert len(manifest.transactions) >= 3
 
     replay_app = create_app(mode="replay", cassette_dir=cassette)
     transport = httpx.ASGITransport(app=replay_app)

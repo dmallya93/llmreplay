@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from llmreplay.store.models import CassetteManifest, CassetteTransaction
+
 
 def _exclusive_lock(lock_path: Path):
     """Context manager: exclusive advisory lock on ``lock_path``."""
@@ -66,7 +68,6 @@ class CassetteStore:
         self.root.mkdir(parents=True, exist_ok=True)
         for name in ("requests", "responses", "bodies", "snapshots", "locks"):
             (self.root / name).mkdir(exist_ok=True)
-            # bodies/snapshots are scaffolding for later chunks.
 
     @property
     def manifest_path(self) -> Path:
@@ -76,28 +77,25 @@ class CassetteStore:
     def lock_path(self) -> Path:
         return self.root / "locks" / "cassette.lock"
 
-    def load_manifest(self) -> dict[str, Any]:
-        if not self.manifest_path.is_file():
-            return {
-                "schema_version": self.schema_version,
-                "cassette_id": self.cassette_id,
-                "extensions": {},
-                "transactions": [],
-                "checksums": {},
-            }
-        return json.loads(self.manifest_path.read_text(encoding="utf-8"))
+    def empty_manifest(self) -> CassetteManifest:
+        return CassetteManifest(
+            schema_version=self.schema_version,
+            cassette_id=self.cassette_id,
+        )
 
-    def write_manifest(self, manifest: dict[str, Any]) -> None:
+    def load_manifest(self) -> CassetteManifest:
+        if not self.manifest_path.is_file():
+            return self.empty_manifest()
+        raw = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        return CassetteManifest.model_validate(raw)
+
+    def write_manifest(self, manifest: CassetteManifest) -> None:
         """Atomically replace cassette.json under exclusive lock."""
         with _exclusive_lock(self.lock_path):
             self._write_manifest_unlocked(manifest)
 
-    def _write_manifest_unlocked(self, manifest: dict[str, Any]) -> None:
-        manifest = dict(manifest)
-        manifest.setdefault("schema_version", self.schema_version)
-        manifest.setdefault("cassette_id", self.cassette_id)
-        manifest.setdefault("extensions", {})
-        payload = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
+    def _write_manifest_unlocked(self, manifest: CassetteManifest) -> None:
+        payload = json.dumps(manifest.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
         tmp = self.manifest_path.with_suffix(f".tmp.{os.getpid()}.{uuid.uuid4().hex}")
         with tmp.open("w", encoding="utf-8") as fh:
             fh.write(payload)
@@ -120,6 +118,12 @@ class CassetteStore:
         tx_id = uuid.uuid4().hex
         req_name = f"{tx_id}.json"
         resp_name = f"{tx_id}.json"
+        tx = CassetteTransaction(
+            id=tx_id,
+            request_ref=f"requests/{req_name}",
+            response_ref=f"responses/{resp_name}",
+            static_hash=static_hash,
+        )
         with _exclusive_lock(self.lock_path):
             req_path = self.root / "requests" / req_name
             resp_path = self.root / "responses" / resp_name
@@ -130,13 +134,6 @@ class CassetteStore:
                 json.dumps(response, indent=2, sort_keys=True) + "\n", encoding="utf-8"
             )
             manifest = self.load_manifest()
-            manifest["transactions"].append(
-                {
-                    "id": tx_id,
-                    "request_ref": f"requests/{req_name}",
-                    "response_ref": f"responses/{resp_name}",
-                    "static_hash": static_hash,
-                }
-            )
+            manifest.transactions.append(tx)
             self._write_manifest_unlocked(manifest)
         return tx_id

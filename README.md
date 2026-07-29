@@ -25,7 +25,7 @@ Coding agents fail in ways unit tests miss: flaky tool order, prompt regressions
 | C2 | Local proxy (Anthropic + OpenAI + Responses) | **Done** (`23da04d`) |
 | C3 | HMAC scrub + profiles | **Done** (`3f2486f`) |
 | C4 | `record` / `replay` / `why` / `doctor` / `bundle` | **Done** (`07586ae`) |
-| C5 | Free test-stack (CCR + Ollama) | **Done** (pending commit) |
+| C5 | Free test-stack (CCR + Ollama) | **Done** (`ddd979c`) |
 | C6–C10 | Snapshots, hooks, fork/tweak, agent parity, release | Planned |
 
 ## Quick start

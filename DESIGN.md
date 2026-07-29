@@ -12,7 +12,7 @@
 | C2 Proxy capture | **done** | `23da04d` | allowlisted proxy record/replay |
 | C3 Scrub + profiles | **done** | `3f2486f` | HMAC scrub, residual fail ci/strict, yaml profiles |
 | C4 CLI core + doctor/bundle | **done** | `07586ae` | record/replay/why/doctor/validate/bundle |
-| C5 Free CCR+Ollama stack | **done** | (pending commit) | test-stack + free keys + smoke |
+| C5 Free CCR+Ollama stack | **done** | `ddd979c` | test-stack + free keys + smoke |
 | C6 FS snapshots | planned | | |
 | C7 Hooks | planned | | |
 | C8 Tweak/fork/sticky | planned | | |

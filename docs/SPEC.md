@@ -1,0 +1,99 @@
+# LLMReplay Normative Specification
+
+**Status:** Locked (architecture score 10/10).  
+**Language:** MUST / MUST NOT / SHOULD.  
+**Process:** Any new behavior requires an amend to this document in the same PR as code.
+
+See [DESIGN.md](../DESIGN.md) for motivation, chunks, validation, and customer/support model.
+
+---
+
+## Field classes
+
+| Class | Match | Inject | Examples |
+|---|---|---|---|
+| `static` | Must equal after normalize | Recorded literal | model, tools, messages, tool args/results, finish_reason, hook decisions, tool_use IDs |
+| `ignore` | Excluded from hash; advisory diff | Recorded literal | usage, latency, `x-request-id` |
+| `scrub` | Placeholder must equal | `«REDACTED:hmac:…»` | Authorization, API keys |
+| `live` | Never from cassette | Real call | Explicit per-tool/step |
+| `template` | Static after materialize | Allowlisted rematerializers only | path rebase, uuid.v4 |
+
+**Rule:** If a field influences what the agent does next, it is **static**. User “dynamic” means **ignore** or **live** — pick one. Never auto-promote mismatch → ignore.
+
+---
+
+## S1. Canonicalization and hashing
+
+- MUST canonicalize JSON per **RFC 8785 (JCS)** via pinned `rfc8785`.
+- MUST encode UTF-8; Unicode NFC for path strings.
+- **Static projection:** deep-copy → delete `ignore` paths → keep `static` + `scrub` placeholders → JCS bytes.
+- **Match key:** `SHA-256(static_projection_jcs_bytes)` hex lowercase.
+- MUST sort parallel `tool_use` / `tool_result` by `(name, JCS(input), tool_use_id)` before projection; store raw order; strip annotations before forwarding.
+- Thinking/reasoning blocks MUST be excluded from hash; stored under `thinking_blocks`; not required for match.
+
+## S2. Scrub and stream redact
+
+- MUST redact at stream ingress before any disk/log buffer.
+- Placeholder: `«REDACTED:hmac:<hex16>»` = first 16 hex chars of `HMAC-SHA-256(key, secret_utf8)`.
+- HMAC key in OS keyring or `LLMREPLAY_HMAC_KEY`; MUST NOT appear in cassettes/default bundles/logs.
+- Detection: `scrub_patterns.yaml` JSONPaths + regex (JWT, `AKIA`, `ghp_`, `sk-`, PEM, `xox*`); residual detector fails `strict`/`ci` record if secrets remain.
+
+## S3. Step-level taint
+
+- Taint `{clean|live|unknown}` per step. Live taints successors until snapshot restore.
+- `strict`/`ci` MUST fail if clean replay consumes tainted predecessor without explicit live chain.
+- Value-level taint tracking MUST NOT.
+
+## S4. Cassette layout
+
+```text
+<cassette-root>/
+  cassette.json
+  cassette.json.bak.<n>
+  requests/<id>.json
+  responses/<id>.json
+  bodies/<sha256>.bin
+  snapshots/<id>.tar.zst
+  snapshots/<id>.json
+  locks/cassette.lock
+```
+
+Atomic tmp → fsync → rename; exclusive writer lock; repair MUST NOT invent transactions.
+
+## S5. Proxy routes
+
+Allowlist only: `POST /v1/messages`, `POST /v1/chat/completions`, `POST /v1/responses`, `GET /v1/models`, `GET /healthz`.  
+Others → `404 LLMREPLAY_ROUTE_DENIED`. Replay MUST NOT open outbound sockets (except loopback health).
+
+## S6. Streaming
+
+Default synthesize valid SSE from final message (same tool IDs / block order). Turn-atomic commit.
+
+## S7. Snapshots
+
+`tar.zst` + `snapshot.json`; workspace roots only; denylist secrets; safe restore (no `/`, `$HOME`, path escape).
+
+## S8. Free-mode startup
+
+`test-stack` healthy → free key → proxy on loopback → agent env → CCR → Ollama. Free key never in cassette.
+
+## S9–S18
+
+See DESIGN.md Normative SPEC sections for Ollama degraded mode, agent matrix, nested sessions, hooks, hermetic pins, resource limits, profile precedence, compatibility, threat model, concurrency.
+
+---
+
+## Exit codes
+
+| Code | Name |
+|---|---|
+| 0 | SUCCESS |
+| 1 | STATIC_MISMATCH |
+| 2 | CASSETTE_MISSING |
+| 3 | LIVE_OR_UPSTREAM_ERROR |
+| 4 | TEST_STACK_UNHEALTHY |
+| 5 | SCHEMA_OR_REPAIR_REQUIRED |
+| 6 | HOOK_OR_POLICY_DIVERGENCE |
+| 7 | SECRET_SCRUB_OR_LIMIT |
+| 8 | NETWORK_DENIED |
+| 9 | ROUTE_OR_PROTOCOL |

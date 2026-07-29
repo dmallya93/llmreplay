@@ -1,0 +1,36 @@
+name: Bug report
+description: Reproducible LLMReplay defect
+body:
+  - type: textarea
+    id: doctor
+    attributes:
+      label: doctor --json
+      description: Paste output of `llmreplay doctor --json` (required). Attach scrubbed `bundle` / `why` output when those commands exist (C4+).
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions (llmreplay, Claude Code/Codex, OS)
+    validations:
+      required: true
+  - type: dropdown
+    id: profile
+    attributes:
+      label: Profile / mode
+      options: [local, ci, strict, record, replay, unknown]
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Scrubbed steps. Do not paste secrets or raw production cassettes.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true

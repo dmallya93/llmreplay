@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/dmallya93/llmreplay/schemas/cassette.v1.json",
+  "title": "LLMReplayCassetteManifest",
+  "type": "object",
+  "required": ["schema_version", "cassette_id", "transactions"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "cassette_id": { "type": "string", "minLength": 1 },
+    "extensions": { "type": "object", "additionalProperties": true },
+    "tool_id_map": { "type": "object", "additionalProperties": { "type": "string" } },
+    "hook_digests": { "type": "object", "additionalProperties": { "type": "string" } },
+    "test_stack": { "type": "object", "additionalProperties": true },
+    "transactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "request_ref", "response_ref"],
+        "properties": {
+          "id": { "type": "string" },
+          "request_ref": { "type": "string" },
+          "response_ref": { "type": "string" },
+          "static_hash": { "type": "string" }
+        }
+      }
+    },
+    "checksums": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

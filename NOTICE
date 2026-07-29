@@ -1,0 +1,9 @@
+LLMReplay
+Copyright 2026 Dilip Mallya and contributors
+
+This product may configure or document third-party tools including:
+- Claude Code Router (CCR) — https://github.com/musistudio/claude-code-router
+- Ollama — https://ollama.com
+- ccg-router — https://github.com/XZXY-AI/ccg-router
+
+Those projects remain under their respective licenses. LLMReplay does not bundle their binaries by default.

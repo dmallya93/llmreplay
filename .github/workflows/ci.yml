@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]"
+      - name: Ruff
+        run: ruff check src tests
+      - name: Pytest (hermetic — no paid APIs; no network required)
+        run: pytest -q
+        env:
+          LLMREPLAY_CI: "1"
+          # Intent: unit/contract tests must not call external LLM APIs.
+          # Outbound deny enforcement for integration tests lands with C2 proxy tests.

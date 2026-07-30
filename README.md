@@ -255,12 +255,22 @@ No Ollama, no paid APIs, no network — pure in-process replay.
 
 ---
 
+## Learn
+
+| | |
+|---|---|
+| **Tutorials** | [Start here](docs/tutorials/README.md) — first cassette → miss → CI → pytest → fork |
+| **Demo (5 min)** | [Scripted walkthrough](docs/demo.md) for talks / lunch-and-learns |
+| **Case studies** | [When it pays off](docs/case-studies.md) — CI cost, pytest mocks, turn-7 bugs |
+
+---
+
 ## Documentation
 
 <table>
 <tr>
 <td width="180"><b>Getting started</b></td>
-<td><a href="docs/quickstart.md">Quickstart</a> · <a href="docs/alpha-limitations.md">Alpha limitations</a></td>
+<td><a href="docs/quickstart.md">Quickstart</a> · <a href="docs/tutorials/README.md">Tutorials</a> · <a href="docs/demo.md">Demo</a> · <a href="docs/case-studies.md">Case studies</a> · <a href="docs/alpha-limitations.md">Alpha limitations</a></td>
 </tr>
 <tr>
 <td><b>Reference</b></td>

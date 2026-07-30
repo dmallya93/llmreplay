@@ -43,3 +43,9 @@ async def test_agent(llmreplay_cassette):
     resp = await llmreplay_cassette.post("/v1/messages", json={...})
     assert resp.status_code == 200
 ```
+
+## Docs
+
+- Tutorials: https://github.com/dmallya93/llmreplay/blob/main/docs/tutorials/README.md
+- Demo script: https://github.com/dmallya93/llmreplay/blob/main/docs/demo.md
+- Case studies: https://github.com/dmallya93/llmreplay/blob/main/docs/case-studies.md

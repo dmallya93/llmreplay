@@ -91,6 +91,9 @@ See [free-test-stack.md](free-test-stack.md) for setup.
 
 | What | Where |
 |---|---|
+| **Tutorials (guided)** | [tutorials/README.md](tutorials/README.md) |
+| **5-minute demo script** | [demo.md](demo.md) |
+| **Case studies** | [case-studies.md](case-studies.md) |
 | Claude Code integration | [integrations/claude-code.md](integrations/claude-code.md) |
 | Codex / OpenAI Responses | [integrations/codex.md](integrations/codex.md) |
 | pytest plugin | [integrations/pytest.md](integrations/pytest.md) |

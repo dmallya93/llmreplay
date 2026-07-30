@@ -1,8 +1,21 @@
 # Claude Code integration
 
-## Base URL
+## Quick start (`llmreplay run`)
 
-Point Claude Code at the LLMReplay proxy:
+Record and replay in a single command — no second terminal needed:
+
+```bash
+# Record one agent turn
+llmreplay run --mode record --cassette .llmreplay/demo \
+  --upstream http://127.0.0.1:3456 -- claude --print "say hi"
+
+# Replay offline
+llmreplay run --mode replay --cassette .llmreplay/demo -- claude --print "say hi"
+```
+
+`llmreplay run` starts the proxy, sets `ANTHROPIC_BASE_URL` / `ANTHROPIC_API_KEY` in the child env, runs the command, and exits with the child's exit code.
+
+## Two-terminal workflow
 
 ```bash
 export ANTHROPIC_BASE_URL=http://127.0.0.1:7432
@@ -53,3 +66,14 @@ llmreplay hooks verify --profile ci
 Denied tools are forced from `hooks/decisions.jsonl`. The decision line on stdout is what Claude Code honors; a stub note is added to `reason` (and echoed on stderr) — there is no protocol to inject a fake tool body.
 
 Hermetic multi-turn goldens: `tests/test_c9_parity.py`. Example walkthrough: `examples/claude-code-hello/`.
+
+## Plugin + skills (alpha)
+
+LLMReplay ships a Claude Code plugin with skill files for `record`, `replay`, and `why`:
+
+```bash
+# Load the plugin from a local path
+claude --plugin-dir /path/to/llmreplay/plugins/llmreplay
+```
+
+Skills are discoverable via `/llmreplay:record`, `/llmreplay:replay`, `/llmreplay:why` once the plugin is loaded.

@@ -1,0 +1,10 @@
+{
+  "name": "llmreplay",
+  "version": "0.1.0",
+  "description": "VCR / time-travel replay for coding agents — record, replay, and diagnose agent LLM interactions",
+  "skills": [
+    "skills/record/SKILL.md",
+    "skills/replay/SKILL.md",
+    "skills/why/SKILL.md"
+  ]
+}

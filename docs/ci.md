@@ -11,6 +11,7 @@ export LLMREPLAY_HMAC_KEY=dev-local-hmac
 export LLMREPLAY_CI=1
 
 ruff check src tests
+python -m build && twine check dist/*
 python -m llmreplay.cli.main docs gen --check --output docs/reference/cli.md
 pytest -q
 bash scripts/mutation_gate.sh    # coverage floor >=95% (not mutmut)

@@ -67,6 +67,7 @@ pytest -q
 bash scripts/mutation_gate.sh      # >=95% coverage on critical modules
 bash scripts/release_smoke.sh      # clean venv install + offline fixture replay
 bash scripts/smoke.sh              # in-process record→replay smoke
+bash scripts/repro_stress.sh       # multi-tool chains + 10× replay identity
 ```
 
 | Check | What it proves |
@@ -75,6 +76,7 @@ bash scripts/smoke.sh              # in-process record→replay smoke
 | `mutation_gate.sh` | Coverage floor on match/scrub/store/migrate/sse/session/hooks |
 | `release_smoke.sh` | Installable package; offline `replay --check` on fixture |
 | `smoke.sh` | End-to-end record→replay with fake upstream |
+| `repro_stress.sh` | Parallel tools, 3-turn chains, OpenAI tools, 10× identical replay |
 | `docs gen --check` | Generated CLI reference is not stale |
 | `ruff check` | Lint |
 

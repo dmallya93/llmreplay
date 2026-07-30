@@ -28,7 +28,7 @@ See [DESIGN.md](../DESIGN.md) for architecture, design locks, and usage. Alpha g
 - MUST encode UTF-8; Unicode NFC for path strings.
 - **Static projection:** deep-copy → delete `ignore` paths → keep `static` + `scrub` placeholders → JCS bytes.
 - **Match key:** `SHA-256(static_projection_jcs_bytes)` hex lowercase.
-- MUST sort parallel `tool_use` / `tool_result` by `(name, JCS(input), tool_use_id)` before projection; store raw order; strip annotations before forwarding.
+- MUST sort parallel `tool_use` / `tool_result` by `(name, JCS(input), tool_use_id)` before projection wherever `messages` appears (including nested `body.messages`); store raw order; strip annotations before forwarding.
 - Thinking/reasoning blocks MUST be excluded from hash; stored under `thinking_blocks`; not required for match.
 
 ## S2. Scrub and stream redact

@@ -58,13 +58,20 @@ def static_projection(
     keys = ignore_keys if ignore_keys is not None else DEFAULT_IGNORE_KEYS
     projected = strip_ignore_fields(event, keys)
     projected = strip_thinking_blocks(projected)
-    if isinstance(projected, dict) and "messages" in projected:
-        messages = projected["messages"]
+    return _sort_tools_in_tree(projected)
+
+
+def _sort_tools_in_tree(value: Any) -> Any:
+    """Sort parallel tool blocks anywhere ``messages`` appears (incl. body.messages)."""
+    if isinstance(value, dict):
+        out: dict[str, Any] = {str(k): _sort_tools_in_tree(v) for k, v in value.items()}
+        messages = out.get("messages")
         if isinstance(messages, list):
-            projected["messages"] = [
-                sort_tool_blocks(m) if isinstance(m, dict) else m for m in messages
-            ]
-    return projected
+            out["messages"] = [sort_tool_blocks(m) if isinstance(m, dict) else m for m in messages]
+        return out
+    if isinstance(value, list):
+        return [_sort_tools_in_tree(item) for item in value]
+    return value
 
 
 def match_key(

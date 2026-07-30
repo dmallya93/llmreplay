@@ -16,6 +16,7 @@ pytest -q
 bash scripts/mutation_gate.sh    # coverage floor >=95% on critical modules
 bash scripts/release_smoke.sh    # clean venv install + offline fixture
 bash scripts/smoke.sh            # optional: fake-upstream record→replay
+bash scripts/repro_stress.sh     # multi-tool / chain / 10× identical replay
 ```
 
 ## Workflows

@@ -3,6 +3,7 @@
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
+# Or from PyPI (no clone): pip install llm-replay
 # Stable scrub placeholders across record/replay (required for ci/strict record):
 export LLMREPLAY_HMAC_KEY=dev-local-hmac
 llmreplay doctor

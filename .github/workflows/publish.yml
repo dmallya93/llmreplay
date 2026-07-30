@@ -1,18 +1,23 @@
 name: Publish
 
-# Manual PyPI publish. Requires repository secret PYPI_TOKEN.
+# Manual PyPI publish for package name ``llm-replay``.
+# Setup (once): https://pypi.org/manage/account/publishing/
+#   - PyPI project: llm-replay
+#   - Owner: dmallya93, repo: llmreplay, workflow: publish.yml, environment: pypi
+# Optional fallback: repository secret PYPI_TOKEN (PyPI API token).
 on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type publish to upload to PyPI'
+        description: "Type publish to upload to PyPI"
         required: true
-        default: ''
+        default: ""
 
 jobs:
   build-publish:
-    if: github.event.inputs.confirm == 'publish'
+    if: github.event.inputs.confirm == "publish"
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
       id-token: write
       contents: read
@@ -23,9 +28,8 @@ jobs:
           python-version: "3.12"
       - name: Build
         run: |
-          python -m pip install -U pip build
+          python -m pip install -U pip build twine
           python -m build
+          twine check dist/*
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_TOKEN }}

@@ -35,7 +35,9 @@ llmreplay doctor
 ### Record → offline replay (agent wiring)
 
 ```bash
-# Terminal A — Anthropic/OpenAI-compatible upstream (CCR default :3456, or any stub)
+# Terminal A — prefer free stack if available; else any Anthropic/OpenAI-compatible stub
+# eval "$(llmreplay keys create --free --print-env)"
+# llmreplay record --free --cassette .llmreplay/demo
 llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
 
 # Terminal B — point Claude Code at the proxy

@@ -301,6 +301,25 @@ def test_openai_tool_role_order_does_not_change_match_key() -> None:
 
 @pytest.mark.contract
 @pytest.mark.asyncio
+async def test_openai_parallel_wrong_tool_result_misses(tmp_path: Path) -> None:
+    session = openai_parallel_tools_session()
+    cass = tmp_path / "oai-par-miss"
+    await record_session(session, cass)
+    bad = deepcopy(session)
+    bad.turns[1].request["body"]["messages"][2]["content"] = "TAMPERED"
+    scrubber = Scrubber(hmac_key=b"parity")
+    app = create_app(mode="replay", cassette_dir=cass, scrubber=scrubber)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://proxy") as client:
+        r0 = await client.post("/v1/chat/completions", json=bad.turns[0].request["body"])
+        assert r0.status_code == 200
+        r1 = await client.post("/v1/chat/completions", json=bad.turns[1].request["body"])
+        assert r1.status_code == 409
+        assert r1.json()["error"]["type"] == "llmreplay_miss"
+
+
+@pytest.mark.contract
+@pytest.mark.asyncio
 async def test_upstream_error_returns_llmreplay_json(tmp_path: Path) -> None:
     class _Boom:
         async def __aenter__(self):

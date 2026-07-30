@@ -4,15 +4,27 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-# shellcheck disable=SC1091
-source .venv/bin/activate 2>/dev/null || true
+
+if [[ -f .venv/bin/activate ]]; then
+  # shellcheck disable=SC1091
+  source .venv/bin/activate
+fi
+
+if command -v python3 >/dev/null 2>&1; then
+  PY=python3
+elif command -v python >/dev/null 2>&1; then
+  PY=python
+else
+  echo "smoke: python3/python not found on PATH" >&2
+  exit 1
+fi
 
 REQUIRE_OLLAMA=0
 if [[ "${1:-}" == "--ollama" ]]; then
   REQUIRE_OLLAMA=1
 fi
 
-python - <<'PY'
+"$PY" - <<'PY'
 from llmreplay.teststack.status import status
 from llmreplay.core.exit_codes import ExitCode
 import sys
@@ -25,13 +37,13 @@ sys.exit(0)
 PY
 
 if [[ "$REQUIRE_OLLAMA" -eq 1 ]]; then
-  python -m llmreplay.cli.main test-stack status --json || {
+  "$PY" -m llmreplay.cli.main test-stack status --json || {
     echo "Ollama required (--ollama) but unhealthy" >&2
     exit 4
   }
 fi
 
-python - <<'PY'
+"$PY" - <<'PY'
 """Inline hermetic record→replay (same as C4 harness)."""
 import asyncio
 from pathlib import Path

@@ -6,7 +6,7 @@ Thanks for helping build LLMReplay.
 
 1. Clone and `pip install -e ".[dev]"`.
 2. Read [README.md](README.md) (quick start + **Testing & validation**) and field classes in [docs/SPEC.md](docs/SPEC.md).
-3. Export `LLMREPLAY_HMAC_KEY=dev-local-hmac` and run `llmreplay doctor` + `pytest -q`.
+3. Export `LLMREPLAY_HMAC_KEY=dev-local-hmac`, run `./scripts/smoke.sh` (hermetic first win), then `llmreplay doctor` + `pytest -q`.
 4. Skim [DESIGN.md](DESIGN.md) and [docs/dev/package-map.md](docs/dev/package-map.md).
 5. Pick a good-first-issue or a subsystem from the package map.
 

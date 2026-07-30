@@ -13,6 +13,7 @@ Target acknowledgment: **5 business days**.
 - Diagnostic `bundle` defaults exclude bodies; opt-in only after preview.
 - HMAC keys: use OS keyring / `LLMREPLAY_HMAC_KEY` for real work. Never commit production HMAC keys.
 - CI generates an **ephemeral per-job** HMAC via `openssl rand` for hermetic scrub stability inside that job only (not a shared production secret).
+- `--allow-remote --free` still speaks plain HTTP by default — put TLS (or a reverse proxy) in front before exposing beyond loopback.
 
 ## Scope
 

@@ -22,28 +22,31 @@ Coding agents fail in ways unit tests miss: flaky tool order, prompt regressions
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 llmreplay doctor
+./scripts/smoke.sh    # hermetic record→replay (fake upstream)
 ```
 
-### Vertical demo (fake upstream → record → replay)
+### Wire an agent (after smoke is green)
 
 ```bash
-# Terminal A — fake upstream (any OpenAI/Anthropic-compatible stub)
-# Terminal B — record into a cassette
+# Record against a real upstream (CCR default :3456, or any OpenAI/Anthropic-compatible stub)
 llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
 
-# Point ANTHROPIC_BASE_URL / OPENAI_BASE_URL at http://127.0.0.1:7432 and run the agent once.
-# Then replay offline (no upstream):
-llmreplay replay --cassette .llmreplay/demo --profile ci
-llmreplay replay --check --cassette .llmreplay/demo
+# Claude Code — point at the proxy (separate terminal)
+export ANTHROPIC_BASE_URL=http://127.0.0.1:7432
+export ANTHROPIC_API_KEY=unused-local
+# run one agent turn, then stop record
 
-# On a miss:
-llmreplay why --cassette .llmreplay/demo --request /path/to/request.json
+llmreplay replay --check --cassette .llmreplay/demo
+llmreplay replay --cassette .llmreplay/demo --profile ci
+
+# On a miss — use a stored request blob from the cassette:
+llmreplay why --cassette .llmreplay/demo --request .llmreplay/demo/requests/<tx-id>.json
 llmreplay bundle --cassette .llmreplay/demo --output /tmp/llmreplay-bundle.zip
 ```
 
-Contract tests cover the same harness without a live server. Free CCR+Ollama: [docs/free-test-stack.md](docs/free-test-stack.md).
+Free CCR+Ollama: [docs/free-test-stack.md](docs/free-test-stack.md). Full path: [docs/quickstart.md](docs/quickstart.md).
 
-See [docs/troubleshooting.md](docs/troubleshooting.md), [docs/reference/cli.md](docs/reference/cli.md), and [docs/free-test-stack.md](docs/free-test-stack.md).
+See [docs/troubleshooting.md](docs/troubleshooting.md) and [docs/reference/cli.md](docs/reference/cli.md).
 
 ## Core ideas
 

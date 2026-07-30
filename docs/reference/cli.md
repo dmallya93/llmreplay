@@ -102,6 +102,7 @@ Options:
 - `--config`: 
 - `--free`: Free stack: default upstream CCR + cassette test_stack
 - `--free-key-store`: 
+- `--allow-remote`: Allow non-loopback --host (dangerous; open forward proxy)
 
 ### `llmreplay replay`
 
@@ -118,6 +119,7 @@ Options:
 - `--free`: Free-mode replay (still offline; documents free path)
 - `--free-key-store`: 
 - `--allow-remote`: Allow non-loopback --host (dangerous; no auth)
+- `--allow-live`: Allow mark-live __llm__ under ci/strict (breaks hermetic replay)
 
 ### `llmreplay snapshot`
 

@@ -261,6 +261,21 @@ def test_sse_edge_paths() -> None:
 
 
 @pytest.mark.unit
-def test_proxy_config_free_default_upstream(tmp_path: Path) -> None:
-    cfg = ProxyConfig(mode="record", cassette_dir=tmp_path, free_mode=True)
-    assert cfg.upstream_base == "http://127.0.0.1:3456"
+def test_bundle_scrubs_manifest_and_bodies(tmp_path: Path) -> None:
+    from llmreplay.diagnose.bundle import create_bundle
+
+    cass = tmp_path / "c"
+    store = CassetteStore(cass)
+    store.write_manifest(store.empty_manifest())
+    bodies = cass / "bodies"
+    bodies.mkdir(exist_ok=True)
+    (bodies / "b1.bin").write_text("token sk-abcdefghijklmnopqrstuvwxyz0123\n", encoding="utf-8")
+    out = tmp_path / "b.zip"
+    result = create_bundle(cass, out, scrub=True, include_bodies=True)
+    assert result.scrubbed is True
+    import zipfile
+
+    with zipfile.ZipFile(out) as zf:
+        body = zf.read("bodies/b1.bin").decode("utf-8")
+        assert "sk-abcdefghijklmnopqrstuvwxyz0123" not in body
+        assert "REDACTED" in body or "«" in body

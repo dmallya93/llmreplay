@@ -141,7 +141,42 @@ async def test_mark_ignore_changes_match_via_yaml(tmp_path: Path) -> None:
 
 @pytest.mark.contract
 @pytest.mark.asyncio
-async def test_replay_stream_true_synthesizes_sse(tmp_path: Path) -> None:
+async def test_replay_stream_true_synthesizes_anthropic_sse(tmp_path: Path) -> None:
+    cassette = tmp_path / "cass"
+    store = CassetteStore(cassette)
+    event = {
+        "method": "POST",
+        "path": "/v1/messages",
+        "headers": {},
+        "body": {"model": "m", "messages": [{"role": "user", "content": "x"}]},
+    }
+    from llmreplay.core.match import match_key
+
+    store.append_transaction(
+        request=event,
+        response={"id": "msg_1", "content": [{"type": "text", "text": "anthropic-hi"}]},
+        static_hash=match_key(event),
+    )
+    app = create_app(mode="replay", cassette_dir=cassette)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://proxy") as client:
+        resp = await client.post(
+            "/v1/messages",
+            json={
+                "model": "m",
+                "messages": [{"role": "user", "content": "x"}],
+                "stream": True,
+            },
+        )
+        assert resp.status_code == 200
+        assert "text/event-stream" in resp.headers["content-type"]
+        assert b"message_start" in resp.content
+        assert b"anthropic-hi" in resp.content
+
+
+@pytest.mark.contract
+@pytest.mark.asyncio
+async def test_replay_stream_true_synthesizes_openai_sse(tmp_path: Path) -> None:
     cassette = tmp_path / "cass"
     store = CassetteStore(cassette)
     event = {
@@ -226,6 +261,13 @@ def test_sse_helpers() -> None:
 def test_replay_refuses_non_loopback_host(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="non-loopback"):
         ProxyConfig(mode="replay", cassette_dir=tmp_path, host="0.0.0.0")
+    with pytest.raises(ValueError, match="non-loopback"):
+        ProxyConfig(
+            mode="record",
+            cassette_dir=tmp_path,
+            upstream_base="http://127.0.0.1:9",
+            host="0.0.0.0",
+        )
     ok = ProxyConfig(
         mode="replay",
         cassette_dir=tmp_path,
@@ -246,6 +288,36 @@ def test_hmac_fallback_is_random_not_fixed(monkeypatch: pytest.MonkeyPatch) -> N
     assert a == b
     assert a != b"llmreplay-ephemeral-dev-key"
     assert len(a) == 32
+
+
+@pytest.mark.unit
+def test_ci_record_requires_hmac_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LLMREPLAY_HMAC_KEY", raising=False)
+    with pytest.raises(ValueError, match="LLMREPLAY_HMAC_KEY"):
+        create_app(
+            config=ProxyConfig(
+                mode="record",
+                cassette_dir=tmp_path / "c",
+                upstream_base="http://127.0.0.1:9",
+                profile="ci",
+            )
+        )
+
+
+@pytest.mark.unit
+def test_ci_refuses_llm_live_without_allow(tmp_path: Path) -> None:
+    cfg = tmp_path / "llmreplay.yaml"
+    cfg.write_text("tools:\n  __llm__:\n    class: live\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="allow_live"):
+        create_app(
+            config=ProxyConfig(
+                mode="replay",
+                cassette_dir=tmp_path / "c",
+                profile="ci",
+                config_path=cfg,
+                upstream_base="http://127.0.0.1:9",
+            )
+        )
 
 
 @pytest.mark.unit

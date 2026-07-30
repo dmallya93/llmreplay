@@ -43,7 +43,7 @@ See [DESIGN.md](../DESIGN.md) for architecture, design locks, and usage. Alpha g
 ## S3. Step-level taint
 
 - Taint `{clean|live|unknown}` per step. Live taints successors until snapshot restore.
-- `strict`/`ci` MUST fail if clean replay consumes tainted predecessor without explicit live chain.
+- `strict`/`ci` SHOULD fail if clean replay consumes a tainted predecessor without an explicit live chain (alpha: tracking partial — see [alpha-limitations.md](alpha-limitations.md)).
 - Value-level taint tracking MUST NOT.
 
 ## S4. Cassette layout
@@ -65,7 +65,10 @@ Atomic tmp → fsync → rename; exclusive writer lock; repair MUST NOT invent t
 ## S5. Proxy routes
 
 Allowlist only: `POST /v1/messages`, `POST /v1/chat/completions`, `POST /v1/responses`, `GET /v1/models`, `GET /healthz`.  
-Others → `404 LLMREPLAY_ROUTE_DENIED`. Replay MUST NOT open outbound sockets (except loopback health).
+Others → `404 LLMREPLAY_ROUTE_DENIED`.  
+Unmarked replay MUST NOT open outbound sockets (except loopback health).  
+**Exception:** when `tools.__llm__.class: live` (and `--allow-live` under `ci`/`strict`), replay MAY forward to configured `--upstream`.  
+Record and replay MUST bind loopback unless `--allow-remote`.
 
 ## S6. Streaming
 
@@ -88,7 +91,7 @@ Default synthesize valid SSE from final message (same tool IDs / block order). R
 - Hook stdin: one UTF-8 JSON `{"version":1,"id":"...","event":"PreToolUse|PostToolUse",...}`; stdout: one JSON line decision `allow|deny|error` echoing `id`.
 - Max 1 MiB; fail closed on timeout/invalid.
 - Record `hook_digests` SHA-256 of hook script bytes; `ci`/`strict` → exit `HOOK_OR_POLICY_DIVERGENCE` (6) on digest mismatch (`llmreplay hooks verify`).
-- Recorded decisions in `hooks/decisions.jsonl` are forced on replay; denied tools use a stub result.
+- Recorded decisions in `hooks/decisions.jsonl` are forced on replay. Denied/error decisions MAY include a human-readable `reason` (stub note). Claude Code consumes the decision line on stdout only — there is no protocol channel to inject a fake `tool_result` body; agents that honor `deny` skip the tool.
 
 ## S15 addendum — sticky / templates
 

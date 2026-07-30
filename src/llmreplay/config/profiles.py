@@ -101,7 +101,7 @@ class LLMReplayFileConfig(BaseModel):
 
     def is_llm_live(self) -> bool:
         """True when LLM proxy calls must hit upstream even in replay."""
-        return self.is_live_tool("__llm__") or self.is_live_tool("llm")
+        return self.is_live_tool("__llm__")
 
 
 def load_llmreplay_yaml(path: Path | None = None) -> LLMReplayFileConfig:

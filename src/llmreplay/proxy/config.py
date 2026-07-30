@@ -26,6 +26,7 @@ class ProxyConfig(BaseModel):
     free_key_store: Path | None = None
     ollama_model: str = "qwen2.5-coder:latest"
     allow_non_loopback: bool = False
+    allow_live: bool = False
 
     @model_validator(mode="after")
     def _validate_record_upstream(self) -> ProxyConfig:
@@ -36,10 +37,9 @@ class ProxyConfig(BaseModel):
             object.__setattr__(self, "upstream_base", "http://127.0.0.1:3456")
         if self.mode == "record" and not self.upstream_base:
             raise ValueError("upstream_base is required when mode=record")
-        if self.mode == "replay" and not self.allow_non_loopback:
-            if self.host not in _LOOPBACK:
-                raise ValueError(
-                    "replay mode refuses non-loopback --host "
-                    f"{self.host!r} (pass allow_non_loopback=True to override)"
-                )
+        if not self.allow_non_loopback and self.host not in _LOOPBACK:
+            raise ValueError(
+                f"{self.mode} mode refuses non-loopback --host "
+                f"{self.host!r} (pass allow_non_loopback=True / --allow-remote)"
+            )
         return self

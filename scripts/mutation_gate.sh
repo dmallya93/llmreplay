@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Coverage floor on critical modules (≥95% over the full hermetic suite).
-# Full mutmut mutation testing can be added on self-hosted nightly runners.
+# Named historically; this is NOT full mutmut kill-rate mutation testing.
+# Full mutmut can be added on self-hosted nightly runners.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

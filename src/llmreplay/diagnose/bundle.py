@@ -41,7 +41,14 @@ def create_bundle(
         )
         count += 1
         if store.manifest_path.is_file():
-            zf.write(store.manifest_path, arcname="cassette.json")
+            text = store.manifest_path.read_text(encoding="utf-8")
+            if scrub:
+                try:
+                    data = json.loads(text)
+                    text = json.dumps(scrubber.scrub_value(data), indent=2, sort_keys=True) + "\n"
+                except json.JSONDecodeError:
+                    text = scrubber.scrub_raw_text(text)
+            zf.writestr("cassette.json", text)
             count += 1
         for sub in ("requests", "responses"):
             folder = store.root / sub
@@ -63,12 +70,21 @@ def create_bundle(
             bodies = store.root / "bodies"
             if bodies.is_dir():
                 for path in sorted(bodies.iterdir()):
-                    if path.is_file():
-                        zf.write(path, arcname=f"bodies/{path.name}")
-                        count += 1
-        zf.writestr(
-            "README.txt",
-            "LLMReplay diagnostic bundle. Scrubbed by default; bodies omitted unless opted in.\n",
+                    if not path.is_file():
+                        continue
+                    raw = path.read_bytes()
+                    if scrub:
+                        try:
+                            text = raw.decode("utf-8")
+                        except UnicodeDecodeError:
+                            text = raw.decode("utf-8", errors="replace")
+                        raw = scrubber.scrub_raw_text(text).encode("utf-8")
+                    zf.writestr(f"bodies/{path.name}", raw)
+                    count += 1
+        note = (
+            "LLMReplay diagnostic bundle. Scrubbed by default; "
+            "bodies omitted unless --include-bodies (still scrubbed when scrub=True).\n"
         )
+        zf.writestr("README.txt", note)
         count += 1
     return BundleResult(path=str(output), files=count, scrubbed=scrub)

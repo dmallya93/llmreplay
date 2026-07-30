@@ -150,8 +150,9 @@ Atomic tmp → fsync → rename; exclusive writer lock. Schema versioned indepen
 ### Hooks (Claude Code)
 
 - Install helpers + digest pin in cassette  
-- Replay forces recorded allow/deny; deny → stub tool result  
-- Tools in `tools.<name>.class: live` return allow on replay (`LLMREPLAY_CONFIG`)  
+- Replay forces recorded allow/deny; deny/error puts a stub note in `reason` (+ stderr) — Claude Code has no inject channel for fake tool bodies  
+- Digest mismatch → `llmreplay hooks verify --profile ci` (exit 6); not auto at proxy start  
+- Tools in `tools.<name>.class: live` return allow on replay when `LLMREPLAY_CONFIG` points at yaml  
 
 ### Validation in CI
 

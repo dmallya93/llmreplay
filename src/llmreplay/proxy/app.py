@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +14,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
-from llmreplay.config.profiles import LLMReplayFileConfig, load_llmreplay_yaml
+from llmreplay.config.profiles import STRICT_PROFILES, LLMReplayFileConfig, load_llmreplay_yaml
 from llmreplay.core.match import match_key
 from llmreplay.core.volatility import DEFAULT_IGNORE_KEYS
 from llmreplay.proxy.config import ProxyConfig, ProxyMode
@@ -116,6 +117,18 @@ def create_app(
     profile = yaml_cfg.resolved_profile(config.profile)
     fail_residual = yaml_cfg.fail_on_residual_secrets(config.profile)
     ignore_keys = frozenset(yaml_cfg.merged_ignore(config.profile)) | DEFAULT_IGNORE_KEYS
+    if config.mode == "record" and config.profile in STRICT_PROFILES:
+        if not os.environ.get("LLMREPLAY_HMAC_KEY"):
+            raise ValueError(
+                f"profile {config.profile!r} requires LLMREPLAY_HMAC_KEY "
+                "(stable scrub placeholders for CI)"
+            )
+    llm_live = yaml_cfg.is_llm_live()
+    if llm_live and config.profile in STRICT_PROFILES and not config.allow_live:
+        raise ValueError(
+            f"profile {config.profile!r} refuses mark-live __llm__ without "
+            "allow_live=True / --allow-live (breaks hermetic replay)"
+        )
     built_scrubber = scrubber or Scrubber(
         extra_scrub_paths=yaml_cfg.merged_scrub_paths(config.profile),
     )
@@ -133,7 +146,7 @@ def create_app(
         free_key_store=config.free_key_store,
         ollama_model=config.ollama_model,
         ignore_keys=ignore_keys,
-        llm_live=yaml_cfg.is_llm_live(),
+        llm_live=llm_live,
     )
     # Touch resolved profile so sticky/ci validation runs at startup.
     _ = profile

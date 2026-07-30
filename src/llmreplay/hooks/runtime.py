@@ -44,7 +44,11 @@ def run_hook_main(*, mode: str | None = None, raw: bytes | None = None) -> int:
             live_tools=cfg.live_tools(),
         )
         if decision.decision in {"deny", "error"}:
-            print(tool_stub_response(request.tool_name), file=sys.stderr)
+            stub = tool_stub_response(request.tool_name)
+            # Protocol has no tool_result inject channel — surface stub in reason + stderr.
+            if not decision.reason:
+                decision = decision.model_copy(update={"reason": stub["content"]})
+            print(stub["content"], file=sys.stderr)
     else:
         force = os.environ.get("LLMREPLAY_HOOK_FORCE")
         if force == "allow":

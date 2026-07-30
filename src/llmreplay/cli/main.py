@@ -134,6 +134,7 @@ def _proxy_config(
     free_mode: bool = False,
     free_key_store: Path | None = None,
     allow_remote: bool = False,
+    allow_live: bool = False,
 ) -> ProxyConfig:
     return ProxyConfig(
         mode=mode,  # type: ignore[arg-type]
@@ -146,6 +147,7 @@ def _proxy_config(
         free_mode=free_mode,
         free_key_store=free_key_store,
         allow_non_loopback=allow_remote,
+        allow_live=allow_live,
     )
 
 
@@ -201,6 +203,13 @@ def record(
         typer.Option("--free", help="Free stack: default upstream CCR + cassette test_stack"),
     ] = False,
     free_key_store: Annotated[Path | None, typer.Option("--free-key-store")] = None,
+    allow_remote: Annotated[
+        bool,
+        typer.Option(
+            "--allow-remote",
+            help="Allow non-loopback --host (dangerous; open forward proxy)",
+        ),
+    ] = False,
 ) -> None:
     """Start the proxy in record mode (capture upstream traffic into a cassette)."""
     try:
@@ -214,6 +223,7 @@ def record(
             config_file=config_file,
             free_mode=free,
             free_key_store=free_key_store,
+            allow_remote=allow_remote,
         )
     except (ValidationError, ValueError) as exc:
         typer.echo(str(exc), err=True)
@@ -254,6 +264,13 @@ def replay(
             help="Allow non-loopback --host (dangerous; no auth)",
         ),
     ] = False,
+    allow_live: Annotated[
+        bool,
+        typer.Option(
+            "--allow-live",
+            help="Allow mark-live __llm__ under ci/strict (breaks hermetic replay)",
+        ),
+    ] = False,
 ) -> None:
     """Start the proxy in replay mode, or `--check` cassette health offline."""
     if check:
@@ -281,6 +298,7 @@ def replay(
             free_mode=free,
             free_key_store=free_key_store,
             allow_remote=allow_remote,
+            allow_live=allow_live,
         )
     except (ValidationError, ValueError) as exc:
         typer.echo(str(exc), err=True)

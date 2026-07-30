@@ -3,6 +3,8 @@
 Package name on PyPI: **`llm-replay`** (the name `llmreplay` is taken by an unrelated project).
 CLI / import remain `llmreplay`.
 
+> **Do not run Publish until Trusted Publisher is configured.** Unconfigured runs fail and show red on the Actions tab. CI already builds + `twine check` the package on every push.
+
 ## One-time Trusted Publisher setup
 
 1. Create a PyPI account (if needed) and enable 2FA.

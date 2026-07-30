@@ -73,6 +73,7 @@ Normative rules: [docs/SPEC.md](docs/SPEC.md). Architecture: [DESIGN.md](DESIGN.
 ## Documentation
 
 - [docs/quickstart.md](docs/quickstart.md) — first green replay
+- [docs/publishing.md](docs/publishing.md) — PyPI Trusted Publisher + social preview
 - [docs/alpha-limitations.md](docs/alpha-limitations.md) — what alpha does / does not claim
 - [docs/ci.md](docs/ci.md) — CI / release smoke / nightly
 - [docs/compatibility.md](docs/compatibility.md) — supported matrix

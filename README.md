@@ -26,7 +26,7 @@ Coding agents fail in ways unit tests miss: flaky tool order, prompt regressions
 | C3 | HMAC scrub + profiles | **Done** (`3f2486f`) |
 | C4 | `record` / `replay` / `why` / `doctor` / `bundle` | **Done** (`07586ae`) |
 | C5 | Free test-stack (CCR + Ollama) | **Done** (`ddd979c`) |
-| C6–C10 | Snapshots, hooks, fork/tweak, agent parity, release | C6–C9 **Done** (`ea6de54`); C10 planned |
+| C6–C10 | Snapshots, hooks, fork/tweak, agent parity, release | **Done** (pending C10 commit) |
 
 ## Quick start
 
@@ -68,9 +68,13 @@ Normative rules: [docs/SPEC.md](docs/SPEC.md).
 
 ## Documentation
 
+- [docs/ci.md](docs/ci.md) — CI / release smoke / nightly
+- [docs/compatibility.md](docs/compatibility.md) — supported matrix
+- [docs/threat-model.md](docs/threat-model.md) — security boundaries
 - [docs/troubleshooting.md](docs/troubleshooting.md) — miss / doctor / bundle starters
 - [docs/reference/cli.md](docs/reference/cli.md) — generated CLI reference
 - [docs/reference/llmreplay-yaml.md](docs/reference/llmreplay-yaml.md) — profile config
+- [docs/free-test-stack.md](docs/free-test-stack.md) — CCR + Ollama
 - [DESIGN.md](DESIGN.md) — architecture + progress tracker
 - [docs/SPEC.md](docs/SPEC.md) — normative implementation contract
 - [CONTRIBUTING.md](CONTRIBUTING.md) — 30-minute contributor path

@@ -7,9 +7,11 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -28,5 +30,7 @@ jobs:
         run: pytest -q
         env:
           LLMREPLAY_CI: "1"
-          # Intent: unit/contract tests must not call external LLM APIs.
-          # Outbound deny enforcement for integration tests lands with C2 proxy tests.
+      - name: Mutation gate (critical module presence)
+        run: ./scripts/mutation_gate.sh
+      - name: Release smoke
+        run: ./scripts/release_smoke.sh

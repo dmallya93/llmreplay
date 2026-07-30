@@ -1,0 +1,17 @@
+{
+  "cassette_id": "996a574f-5c3f-4b66-a39b-d7b4aa03dfce",
+  "checksums": {},
+  "extensions": {},
+  "hook_digests": {},
+  "schema_version": 1,
+  "test_stack": {},
+  "tool_id_map": {},
+  "transactions": [
+    {
+      "id": "93ca55faaf1f44a7a066a79506d8a61e",
+      "request_ref": "requests/93ca55faaf1f44a7a066a79506d8a61e.json",
+      "response_ref": "responses/93ca55faaf1f44a7a066a79506d8a61e.json",
+      "static_hash": "7a2b0a1edb085402023c5ca4336d7a0b2ecb76c12ffbd658fd86bc058b5887ff"
+    }
+  ]
+}

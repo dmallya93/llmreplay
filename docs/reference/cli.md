@@ -66,6 +66,15 @@ Options:
 - `tool`: Tool name to mark live
 - `--config`: 
 
+### `llmreplay migrate`
+
+Upgrade a cassette schema_version (backs up cassette.json).
+
+Options:
+- `--cassette`: 
+- `--dry-run`: Preview migration without writing
+- `--target`: Target schema_version
+
 ### `llmreplay proxy`
 
 Run the local allowlisted LLM proxy (SPEC S5).

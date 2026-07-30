@@ -1,0 +1,14 @@
+{
+  "body": {
+    "messages": [
+      {
+        "content": "ping",
+        "role": "user"
+      }
+    ],
+    "model": "release"
+  },
+  "headers": {},
+  "method": "POST",
+  "path": "/v1/messages"
+}

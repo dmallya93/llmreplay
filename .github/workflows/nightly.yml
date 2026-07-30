@@ -1,0 +1,27 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  free-stack-smoke:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'nightly-ollama')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]"
+      - name: Hermetic smoke (always)
+        run: ./scripts/smoke.sh
+      - name: Free-stack status (informational)
+        run: python -m llmreplay.cli.main test-stack status --json || true
+        # Live Ollama (`./scripts/smoke.sh --ollama`) requires a self-hosted runner with Ollama.

@@ -26,3 +26,12 @@ Each transaction requires: `id`, `request_ref`, `response_ref`, `static_hash`.
 ## Writing
 
 Use `llmreplay.store.cassette.CassetteStore` — exclusive lock, tmp → fsync → rename, directory fsync.
+
+## Migrate
+
+```bash
+llmreplay migrate --cassette path/to/cassette --dry-run
+llmreplay migrate --cassette path/to/cassette
+```
+
+Current schema: **1**. Legacy manifests without `schema_version` are treated as **0** and upgraded (`request`/`response` → `request_ref`/`response_ref`). A backup `cassette.json.bak.pre-migrate-vN` is written.

@@ -15,8 +15,10 @@ _DROP_HEADERS = frozenset(
         "tracestate",
         "host",
         "content-length",
-        "connection",
+        "content-type",
+        "accept",
         "accept-encoding",
+        "connection",
     }
 )
 

@@ -25,6 +25,7 @@ from llmreplay.lineage.fork import fork_cassette
 from llmreplay.lineage.sticky import maybe_sticky_write
 from llmreplay.lineage.templates import apply_materializer, list_materializers
 from llmreplay.lineage.tweak import tweak_transaction
+from llmreplay.migrate.engine import CURRENT_SCHEMA_VERSION, migrate_cassette
 from llmreplay.proxy.app import create_app
 from llmreplay.proxy.config import ProxyConfig
 from llmreplay.snapshot.engine import create_snapshot, extensions_fs_payload, restore_snapshot
@@ -656,6 +657,30 @@ def template_cmd(
         typer.echo(str(exc), err=True)
         _footer(ExitCode.ROUTE_OR_PROTOCOL)
         raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL) from exc
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@app.command()
+def migrate(
+    cassette: Annotated[Path, typer.Option("--cassette")] = Path(".llmreplay/cassette"),
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Preview migration without writing"),
+    ] = False,
+    target: Annotated[
+        int,
+        typer.Option("--target", help="Target schema_version"),
+    ] = CURRENT_SCHEMA_VERSION,
+) -> None:
+    """Upgrade a cassette schema_version (backs up cassette.json)."""
+    try:
+        result = migrate_cassette(cassette, target=target, dry_run=dry_run)
+    except (OSError, ValueError, FileNotFoundError) as exc:
+        typer.echo(str(exc), err=True)
+        _footer(ExitCode.SCHEMA_OR_REPAIR_REQUIRED)
+        raise typer.Exit(ExitCode.SCHEMA_OR_REPAIR_REQUIRED) from exc
     typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
     _footer(ExitCode.SUCCESS)
     raise typer.Exit(ExitCode.SUCCESS)

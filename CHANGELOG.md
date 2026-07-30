@@ -8,8 +8,13 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/). Cassette `sc
 
 ### Added
 
+- C10: `migrate` (v0→v1), release smoke, CI OS matrix, nightly workflow, ci/compatibility/threat-model docs.
 - C9: Multi-turn Claude/Codex parity harness + goldens; `examples/claude-code-hello` + `codex-hello`; Codex integration docs.
 - C8: `fork` / `tweak` / `sticky` / `template` allowlist; `debug_sticky` profile; fork-tweak docs.
+
+### Schema
+
+- Cassette `schema_version` **1** is current. Use `llmreplay migrate` for legacy (v0) manifests.
 - C7: Claude Code hooks (`hooks install|verify|decide`), digests, decision force on replay, integration docs.
 - C6: Workspace FS snapshots (`snapshot create|restore`), denylist, path-traversal guards, `docs/concepts/snapshots.md`.
 - C5: Free test-stack (`test-stack up/down/status`), localhost free keys, CCR config helper, `scripts/smoke.sh`, free-test-stack docs.

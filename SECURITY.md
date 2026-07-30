@@ -18,3 +18,7 @@ Target acknowledgment: **5 business days**.
 In scope: recording, scrubbing, proxy open-relay risks, path traversal in snapshots, cassette integrity.
 
 Out of scope: vulnerabilities solely in Claude Code, Codex, CCR, or Ollama upstreams (report upstream; we document workarounds when relevant).
+
+## Threat model
+
+See [docs/threat-model.md](docs/threat-model.md) for trust boundaries and mitigations.

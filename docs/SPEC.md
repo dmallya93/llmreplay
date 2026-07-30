@@ -102,9 +102,11 @@ Default synthesize valid SSE from final message (same tool IDs / block order). T
 - Codex Responses: `previous_response_id` is static when present.
 - Hermetic goldens live under `tests/test_c9_parity.py`; examples under `examples/claude-code-hello` and `examples/codex-hello`.
 
-## S9–S18
+## S16. Compatibility / migrate
 
-See DESIGN.md Normative SPEC sections for Ollama degraded mode, agent matrix, nested sessions, hermetic pins, resource limits, profile precedence, compatibility, threat model, concurrency.
+- Cassette `schema_version` is an integer independent of CLI semver.
+- `llmreplay migrate [--dry-run]` upgrades through registered steps to the current version (now **1**).
+- CLI MUST support current and previous two schema majors via migrate (v0→v1 ships in C10).
 
 ---
 

@@ -1,0 +1,11 @@
+{
+  "cassette_id": "legacy-demo",
+  "transactions": [
+    {
+      "id": "t0",
+      "request": "requests/t0.json",
+      "response": "responses/t0.json",
+      "static_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ]
+}

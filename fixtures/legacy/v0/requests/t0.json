@@ -1,0 +1,9 @@
+{
+  "method": "POST",
+  "path": "/v1/messages",
+  "headers": {},
+  "body": {
+    "model": "legacy",
+    "messages": [{"role": "user", "content": "hi"}]
+  }
+}

@@ -10,7 +10,7 @@
 ### We support
 
 - Latest stable LLMReplay
-- Documented Claude Code / Codex / CCR / Ollama / OS combinations (compatibility matrix — C10)
+- Documented Claude Code / Codex / CCR / Ollama / OS combinations — see [docs/compatibility.md](docs/compatibility.md)
 - Reproducible failures with scrubbed cassette or `llmreplay bundle` + `llmreplay doctor --json`
 - Matcher, migrate, scrub, and security defects
 

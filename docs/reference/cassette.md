@@ -8,8 +8,10 @@ On-disk layout (SPEC S4):
   cassette.json.bak.<n>
   requests/<id>.json
   responses/<id>.json
-  bodies/<sha256>.bin      # later chunks
-  snapshots/<id>.tar.zst   # later chunks
+  bodies/<sha256>.bin
+  snapshots/<id>.tar.zst
+  snapshots/<id>.json
+  hooks/decisions.jsonl
   locks/cassette.lock
 ```
 
@@ -21,11 +23,11 @@ Required fields: `schema_version`, `cassette_id`, `transactions`.
 
 Each transaction requires: `id`, `request_ref`, `response_ref`, `static_hash`.
 
-`extensions: {}` is reserved for FS/hooks metadata without breaking schema majors.
+Optional / extensions: `extensions` (FS + `session` nested digests), `tool_id_map`, `hook_digests`, `test_stack`, `checksums`.
 
 ## Writing
 
-Use `llmreplay.store.cassette.CassetteStore` — exclusive lock, tmp → fsync → rename, directory fsync.
+Use `llmreplay.store.cassette.CassetteStore` — exclusive lock, tmp → fsync → rename.
 
 ## Migrate
 

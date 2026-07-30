@@ -10,7 +10,7 @@ These rules apply to **all** LLMReplay code and to any agent that implements or 
 4. **Double quotes**, Ruff format/lint clean (`ruff check`, `ruff format`).
 5. **No secrets in fixtures, logs, or cassettes** — scrub before disk (SPEC S2).
 6. **SPEC amend in the same PR** as behavior changes.
-7. **Tests with the chunk** — unit/contract; property tests for hash/normalize/scrub.
+7. **Tests with the change** — unit/contract; property tests for hash/normalize/scrub.
 8. **Exit codes** — use `llmreplay.core.exit_codes.ExitCode`; never invent ad-hoc integers.
 
 ## Pydantic conventions

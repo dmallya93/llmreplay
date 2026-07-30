@@ -1,6 +1,6 @@
-# Proxy (C2)
+# Proxy architecture
 
-Local allowlisted reverse proxy for Claude Code / Codex base URLs.
+Local allowlisted reverse proxy for Claude Code / Codex base URLs. Package: `llmreplay.proxy`.
 
 ## Routes (SPEC S5)
 
@@ -18,18 +18,22 @@ All other paths → `404` with `LLMREPLAY_ROUTE_DENIED`.
 
 ```bash
 # Record against an upstream (e.g. CCR or a fake server)
-llmreplay proxy --mode record --cassette .llmreplay/c \
-  --upstream http://127.0.0.1:3456 --port 7432
+llmreplay record --cassette .llmreplay/c --upstream http://127.0.0.1:3456 --port 7432
 
 # Replay offline from cassette (no upstream)
-llmreplay proxy --mode replay --cassette .llmreplay/c --port 7432
+llmreplay replay --cassette .llmreplay/c --port 7432 --profile ci
 ```
 
-Point the agent at the proxy:
+Bind is loopback-only unless `--allow-remote`. Point the agent at the proxy:
 
 ```bash
 export ANTHROPIC_BASE_URL=http://127.0.0.1:7432
 export OPENAI_BASE_URL=http://127.0.0.1:7432/v1
 ```
 
-Replay misses return `409` with `static_hash` for diagnostics (full `why` lands in C4).
+## Behavior notes
+
+- Replay miss → `409` with `static_hash`; diagnose with `llmreplay why --request <cassette>/requests/<id>.json`
+- `stream: true` → SSE synthesis from the stored final message (record forces non-stream upstream capture)
+- `mark-live __llm__` → replay forwards to `--upstream` (needs `--allow-live` under `ci`/`strict`)
+- Free keys: see [free-test-stack.md](../free-test-stack.md)

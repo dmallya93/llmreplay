@@ -37,7 +37,7 @@ See [DESIGN.md](../DESIGN.md) for architecture, design locks, and usage. Alpha g
 - For buffered JSON proxy requests (current default), MUST apply regex + sensitive-key scrub to the normalized event immediately after parse; raw upstream forward may keep original bytes.
 - Full SSE **byte-stream** ingress redact MUST land with streaming capture (S6); until then, synthesized SSE from scrubbed final messages is sufficient.
 - Placeholder: `«REDACTED:hmac:<hex16>»` = first 16 hex chars of `HMAC-SHA-256(key, secret_utf8)`.
-- HMAC key from `LLMREPLAY_HMAC_KEY` (required in CI) or OS keyring (doctor surface, C4+); MUST NOT appear in cassettes/default bundles/logs. When unset, use a **random per-process** key (not a fixed string); doctor MUST warn — placeholders will not be stable across restarts.
+- HMAC key from `LLMREPLAY_HMAC_KEY` (required for `ci`/`strict` **record**, and recommended always) or OS keyring; MUST NOT appear in cassettes/default bundles/logs. When unset outside ci/strict, use a **random per-process** key (not a fixed string); doctor MUST warn — placeholders will not be stable across restarts.
 - Detection: packaged `default_patterns.yaml` — `sensitive_keys` + dotted `scrub_paths` (starter path pack) + regex (JWT, `AKIA`, `ghp_`, `sk-`, PEM, `xox*`); residual detector **MUST fail** `strict`/`ci` record (HTTP 422 `llmreplay_secret`, exit `SECRET_SCRUB_OR_LIMIT`) if secrets remain after scrub. `local` MAY warn/allow.
 
 ## S3. Step-level taint
@@ -109,7 +109,7 @@ Default synthesize valid SSE from final message (same tool IDs / block order). R
 
 - Cassette `schema_version` is an integer independent of CLI semver.
 - `llmreplay migrate [--dry-run]` upgrades through registered steps to the current version (now **1**).
-- CLI MUST support current and previous two schema majors via migrate (v0→v1 ships in C10).
+- CLI MUST support current and previous two schema majors via migrate (v0→v1 shipped).
 
 ---
 

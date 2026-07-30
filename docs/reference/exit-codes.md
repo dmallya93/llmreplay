@@ -17,4 +17,4 @@ Stable process exit codes for LLMReplay. Also available via `llmreplay exit-code
 
 Stderr footers always print `exit N = NAME — …`.
 
-**Note:** Click/Typer may use exit code `2` for CLI usage errors. Application-level `CASSETTE_MISSING` is reserved for successful CLI parse with missing cassette data (C4+). Prefer structured `.llmreplay/last-failure.json` when both could apply.
+**Note:** Click/Typer may use exit code `2` for CLI usage errors. Application-level `CASSETTE_MISSING` is reserved for successful CLI parse with missing cassette data. Prefer structured `.llmreplay/last-failure.json` when both could apply.

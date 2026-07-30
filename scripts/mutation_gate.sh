@@ -1,14 +1,28 @@
 #!/usr/bin/env bash
-# Coverage floor on critical modules (≥95% over the full hermetic suite).
+# Coverage floor on critical modules (>=95% over the full hermetic suite).
 # Named historically; this is NOT full mutmut kill-rate mutation testing.
-# Full mutmut can be added on self-hosted nightly runners.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-# shellcheck disable=SC1091
-source .venv/bin/activate 2>/dev/null || true
 
-python -m pytest -q \
+if [[ -f .venv/bin/activate ]]; then
+  # shellcheck disable=SC1091
+  source .venv/bin/activate
+fi
+
+# Prefer python3 (macOS Actions / Homebrew); fall back to python.
+if command -v python3 >/dev/null 2>&1; then
+  PY=python3
+elif command -v python >/dev/null 2>&1; then
+  PY=python
+else
+  echo "mutation_gate: python3/python not found on PATH" >&2
+  exit 1
+fi
+
+echo "mutation_gate: using $($PY -c 'import sys; print(sys.executable)')"
+
+"$PY" -m pytest -q \
   --cov=llmreplay.core \
   --cov=llmreplay.scrub \
   --cov=llmreplay.store \

@@ -13,12 +13,15 @@ llmreplay test-stack up
 # follow printed instructions: ollama pull, install CCR, copy config
 
 llmreplay test-stack status --json   # exit 4 if Ollama down
-llmreplay keys create --free --print-env
-# eval the printed exports, then:
-llmreplay record --upstream http://127.0.0.1:3456
+eval "$(llmreplay keys create --free --print-env)"
+llmreplay record --free --cassette .llmreplay/demo
+# agent turn with env from --print-env
+llmreplay replay --cassette .llmreplay/demo --profile ci
 ```
 
 Free keys are **localhost-only** and quota-limited. Tokens must never appear in cassettes (scrub / drop auth headers already).
+
+`--free` defaults upstream to CCR (`http://127.0.0.1:3456`) and writes a `test_stack` fingerprint into the cassette. You can also pass `--upstream` explicitly.
 
 ## Degraded mode
 

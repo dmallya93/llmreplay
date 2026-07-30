@@ -254,4 +254,5 @@ Telemetry: **off by default**; opt-in only; never prompts/paths/cassette bodies.
 | [docs/threat-model.md](docs/threat-model.md) | Security boundaries |
 | [docs/alpha-limitations.md](docs/alpha-limitations.md) | What alpha does not yet claim |
 | [docs/dev/coding-standards.md](docs/dev/coding-standards.md) | Contributor / agent coding rules |
+| [docs/dev/package-map.md](docs/dev/package-map.md) | Package ownership map |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 30-minute contributor path |

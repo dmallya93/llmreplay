@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  LLMREPLAY_CI: "1"
+  LLMREPLAY_HMAC_KEY: "llmreplay-ci-hmac-key"
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -28,9 +32,7 @@ jobs:
         run: python -m llmreplay.cli.main docs gen --check --output docs/reference/cli.md
       - name: Pytest (hermetic — no paid APIs; no network required)
         run: pytest -q
-        env:
-          LLMREPLAY_CI: "1"
-      - name: Mutation gate (critical module presence)
-        run: ./scripts/mutation_gate.sh
+      - name: Coverage gate (critical modules >=95%)
+        run: bash scripts/mutation_gate.sh
       - name: Release smoke
-        run: ./scripts/release_smoke.sh
+        run: bash scripts/release_smoke.sh

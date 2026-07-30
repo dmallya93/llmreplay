@@ -32,6 +32,10 @@ Options:
 
 List stable process exit codes.
 
+### `llmreplay hooks`
+
+Claude Code hook install/verify/decide (S12).
+
 ### `llmreplay keys`
 
 Free localhost API keys.

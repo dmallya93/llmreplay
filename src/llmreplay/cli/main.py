@@ -18,6 +18,9 @@ from llmreplay.diagnose.doctor import run_doctor
 from llmreplay.diagnose.mark import mark_ignore_fields, mark_live_tool
 from llmreplay.diagnose.validate import validate_cassette
 from llmreplay.diagnose.why import diagnose_miss, load_request_event
+from llmreplay.hooks.digest import verify_hook_digests
+from llmreplay.hooks.install import install_claude_hooks
+from llmreplay.hooks.runtime import run_hook_main
 from llmreplay.proxy.app import create_app
 from llmreplay.proxy.config import ProxyConfig
 from llmreplay.snapshot.engine import create_snapshot, extensions_fs_payload, restore_snapshot
@@ -45,6 +48,9 @@ app.add_typer(keys_app, name="keys")
 
 snapshot_app = typer.Typer(help="Workspace filesystem snapshots (SPEC S7).")
 app.add_typer(snapshot_app, name="snapshot")
+
+hooks_app = typer.Typer(help="Claude Code hook install/verify/decide (S12).")
+app.add_typer(hooks_app, name="hooks")
 
 
 def _footer(code: ExitCode) -> None:
@@ -502,6 +508,53 @@ def snapshot_restore(
     typer.echo(json.dumps(meta.model_dump(mode="json"), indent=2))
     _footer(ExitCode.SUCCESS)
     raise typer.Exit(ExitCode.SUCCESS)
+
+
+@hooks_app.command("install")
+def hooks_install(
+    hooks_dir: Annotated[
+        Path,
+        typer.Option("--dir", help="Directory for hook scripts"),
+    ] = Path(".llmreplay/hooks"),
+    mode: Annotated[str, typer.Option("--mode", help="record or replay")] = "record",
+    cassette: Annotated[Path, typer.Option("--cassette")] = Path(".llmreplay/cassette"),
+) -> None:
+    """Install Claude Code Pre/PostToolUse hook wrappers and record digests."""
+    result = install_claude_hooks(hooks_dir, mode=mode)
+    CassetteStore(cassette).set_hook_digests(result.digests)
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@hooks_app.command("verify")
+def hooks_verify(
+    hooks_dir: Annotated[Path, typer.Option("--dir")] = Path(".llmreplay/hooks"),
+    cassette: Annotated[Path, typer.Option("--cassette")] = Path(".llmreplay/cassette"),
+    profile: Annotated[str, typer.Option("--profile")] = "ci",
+) -> None:
+    """Verify hook script digests against the cassette (exit 6 on ci/strict mismatch)."""
+    scripts = {
+        "PreToolUse": hooks_dir / "pre_tool_use.py",
+        "PostToolUse": hooks_dir / "post_tool_use.py",
+    }
+    present = {k: v for k, v in scripts.items() if v.is_file()}
+    result = verify_hook_digests(CassetteStore(cassette), present, profile=profile)
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+    if not result.ok:
+        _footer(ExitCode.HOOK_OR_POLICY_DIVERGENCE)
+        raise typer.Exit(ExitCode.HOOK_OR_POLICY_DIVERGENCE)
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@hooks_app.command("decide")
+def hooks_decide(
+    mode: Annotated[str, typer.Option("--mode")] = "record",
+) -> None:
+    """Read one hook JSON from stdin and emit a decision line (for wrapper scripts)."""
+    code = run_hook_main(mode=mode)
+    raise typer.Exit(code)
 
 
 if __name__ == "__main__":

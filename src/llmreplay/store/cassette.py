@@ -144,3 +144,12 @@ class CassetteStore:
             manifest = self.load_manifest()
             manifest.test_stack = dict(fingerprint)
             self._write_manifest_unlocked(manifest)
+
+    def set_hook_digests(self, digests: dict[str, str]) -> None:
+        """Record SHA-256 digests of hook scripts (DESIGN S12)."""
+        with _exclusive_lock(self.lock_path):
+            manifest = self.load_manifest()
+            merged = dict(manifest.hook_digests)
+            merged.update(digests)
+            manifest.hook_digests = merged
+            self._write_manifest_unlocked(manifest)

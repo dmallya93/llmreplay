@@ -83,9 +83,16 @@ Default synthesize valid SSE from final message (same tool IDs / block order). T
 - `llmreplay keys create --free` issues localhost-only quota keys; refuse non-loopback peers.
 - Degraded mode: Ollama up without CCR MAY use Ollama OpenAI-compatible `/v1` as upstream for Chat Completions.
 
+## S12. Hook protocol (Claude Code)
+
+- Hook stdin: one UTF-8 JSON `{"version":1,"id":"...","event":"PreToolUse|PostToolUse",...}`; stdout: one JSON line decision `allow|deny|error` echoing `id`.
+- Max 1 MiB; fail closed on timeout/invalid.
+- Record `hook_digests` SHA-256 of hook script bytes; `ci`/`strict` → exit `HOOK_OR_POLICY_DIVERGENCE` (6) on digest mismatch (`llmreplay hooks verify`).
+- Recorded decisions in `hooks/decisions.jsonl` are forced on replay; denied tools use a stub result.
+
 ## S9–S18
 
-See DESIGN.md Normative SPEC sections for Ollama degraded mode, agent matrix, nested sessions, hooks, hermetic pins, resource limits, profile precedence, compatibility, threat model, concurrency.
+See DESIGN.md Normative SPEC sections for Ollama degraded mode, agent matrix, nested sessions, hermetic pins, resource limits, profile precedence, compatibility, threat model, concurrency.
 
 ---
 

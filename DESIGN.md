@@ -14,7 +14,7 @@
 | C4 CLI core + doctor/bundle | **done** | `07586ae` | record/replay/why/doctor/validate/bundle |
 | C5 Free CCR+Ollama stack | **done** | `ddd979c` | test-stack + free keys + smoke |
 | C6 FS snapshots | **done** | `a9d38cb` | tar.zst + denylist + restore |
-| C7 Hooks | planned | | |
+| C7 Hooks | **done** | (pending commit) | install/verify/decide + digests |
 | C8 Tweak/fork/sticky | planned | | |
 | C9 Agent parity | planned | | |
 | C10 Migrate + release | planned | | |

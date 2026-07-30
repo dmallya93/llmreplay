@@ -3,8 +3,8 @@
 **VCR / time-travel for coding agents.** Record Claude Code or Codex once, then replay offline — stop, tweak, fork, and assert — without burning tokens or waiting on nondeterministic model runs.
 
 [![CI](https://github.com/dmallya93/llmreplay/actions/workflows/ci.yml/badge.svg)](https://github.com/dmallya93/llmreplay/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/coding-agent-vcr.svg)](https://pypi.org/project/coding-agent-vcr/)
-[![Python](https://img.shields.io/pypi/pyversions/coding-agent-vcr.svg)](https://pypi.org/project/coding-agent-vcr/)
+[![PyPI](https://img.shields.io/pypi/v/coding-agent-vcr.svg?logo=pypi&logoColor=white)](https://pypi.org/project/coding-agent-vcr/)
+[![Python](https://img.shields.io/pypi/pyversions/coding-agent-vcr.svg?logo=python&logoColor=white)](https://pypi.org/project/coding-agent-vcr/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 > **Status:** Early alpha. See [docs/alpha-limitations.md](docs/alpha-limitations.md).

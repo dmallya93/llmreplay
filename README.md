@@ -17,20 +17,15 @@
 
 <div align="center">
 
-```
-   ╔══════════════════════════════════════════════════════════════╗
-   ║                                                              ║
-   ║   $ llmreplay run --mode record -- claude --print "fix it"   ║
-   ║   $ llmreplay run --mode replay -- claude --print "fix it"   ║
-   ║                                                              ║
-   ║   ✓ Deterministic replay                                     ║
-   ║   ✓ Zero tokens burned                                       ║
-   ║   ✓ Works offline                                             ║
-   ║                                                              ║
-   ╚══════════════════════════════════════════════════════════════╝
-```
+![LLMReplay demo: install, doctor, hermetic record→replay](docs/assets/demo-hero.gif)
 
 </div>
+
+<p align="center">
+  <a href="docs/assets/demo-record-replay.gif">record → replay</a> ·
+  <a href="docs/assets/demo-miss-why.gif">miss → why</a> ·
+  <a href="docs/demo.md">5-minute demo script</a>
+</p>
 
 > **Status:** Early alpha — [what works and what doesn't](docs/alpha-limitations.md)
 

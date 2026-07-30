@@ -3,6 +3,34 @@
 Script for a live demo, conference booth, or team lunch-and-learn.
 No paid API keys required if you use the hermetic path.
 
+## Pre-recorded GIFs
+
+| GIF | What it shows |
+|---|---|
+| [demo-hero.gif](assets/demo-hero.gif) | Install hint → `doctor` → hermetic record/replay |
+| [demo-record-replay.gif](assets/demo-record-replay.gif) | Focused record → offline match |
+| [demo-miss-why.gif](assets/demo-miss-why.gif) | Prompt drift → 409 miss → `why` |
+
+Regenerate (requires [VHS](https://github.com/charmbracelet/vhs)):
+
+```bash
+./scripts/render_demos.sh
+```
+
+![Hero demo](assets/demo-hero.gif)
+
+<details><summary>record → replay</summary>
+
+![record replay](assets/demo-record-replay.gif)
+
+</details>
+
+<details><summary>miss → why</summary>
+
+![miss why](assets/demo-miss-why.gif)
+
+</details>
+
 ```
   ┌────────────────────────────────────────────────────────────┐
   │  DEMO ARC                                                  │

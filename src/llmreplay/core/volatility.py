@@ -15,6 +15,8 @@ DEFAULT_IGNORE_KEYS: frozenset[str] = frozenset(
         "date",
         "created",
         "created_at",
+        # Streaming is transport-only; match on final message shape (SPEC S6).
+        "stream",
     }
 )
 

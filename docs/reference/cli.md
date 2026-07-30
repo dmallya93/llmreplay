@@ -87,6 +87,7 @@ Options:
 - `--port`: 
 - `--profile`: 
 - `--config`: 
+- `--allow-remote`: Allow non-loopback --host in replay (dangerous; no auth)
 
 ### `llmreplay record`
 
@@ -115,6 +116,7 @@ Options:
 - `--check`: Validate cassette for offline replay and exit
 - `--free`: Free-mode replay (still offline; documents free path)
 - `--free-key-store`: 
+- `--allow-remote`: Allow non-loopback --host (dangerous; no auth)
 
 ### `llmreplay snapshot`
 
@@ -175,4 +177,6 @@ Explain a static miss and suggest mark-ignore (never auto-applied).
 Options:
 - `--cassette`: 
 - `--request`: Path to normalized request JSON
-- `--json`:
+- `--json`: 
+- `--config`: 
+- `--profile`:

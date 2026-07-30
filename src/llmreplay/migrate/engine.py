@@ -88,10 +88,15 @@ def _migrate_0_to_1(raw: dict[str, Any], root: Path) -> dict[str, Any]:
             try:
                 request = json.loads(req_path.read_text(encoding="utf-8"))
                 item["static_hash"] = match_key(scrubber.scrub_event(request))
-            except (json.JSONDecodeError, OSError, TypeError, ValueError):
-                item.setdefault("static_hash", "0" * 64)
+            except (json.JSONDecodeError, OSError, TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"migrate: cannot recompute static_hash for {item['request_ref']}: {exc}"
+                ) from exc
         elif "static_hash" not in item or len(str(item.get("static_hash", ""))) != 64:
-            item["static_hash"] = "0" * 64
+            raise ValueError(
+                f"migrate: missing request blob and valid static_hash for transaction "
+                f"{item.get('id', i)!r} (ref={item.get('request_ref')!r})"
+            )
         txs.append(item)
     out["transactions"] = txs
     ensure_transaction_blobs(root, out)

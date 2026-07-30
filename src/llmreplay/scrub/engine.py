@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import re
+import secrets
 from copy import deepcopy
 from typing import Any
 
@@ -17,21 +18,25 @@ PLACEHOLDER_SUFFIX = "»"
 _PLACEHOLDER_RE = re.compile(
     re.escape(PLACEHOLDER_PREFIX) + r"[0-9a-f]{16}" + re.escape(PLACEHOLDER_SUFFIX)
 )
+_PROCESS_HMAC_KEY: bytes | None = None
 
 
 def resolve_hmac_key(explicit: bytes | None = None) -> bytes:
-    """Resolve HMAC key from arg, env, or ephemeral process key.
+    """Resolve HMAC key from arg, env, or random per-process key.
 
-    SPEC prefers OS keyring or ``LLMREPLAY_HMAC_KEY``. Keyring lands with
-    doctor/support surfaces (C4); until then CI MUST set the env var.
+    SPEC prefers OS keyring or ``LLMREPLAY_HMAC_KEY``. CI MUST set the env var
+    for stable placeholders across runs.
     """
+    global _PROCESS_HMAC_KEY
     if explicit is not None:
         return explicit
     env = os.environ.get("LLMREPLAY_HMAC_KEY")
     if env:
         return env.encode("utf-8")
-    # Ephemeral per-process key for local dev; CI should set LLMREPLAY_HMAC_KEY.
-    return hashlib.sha256(b"llmreplay-ephemeral-dev-key").digest()
+    # Random per-process key — not stable across restarts (doctor warns).
+    if _PROCESS_HMAC_KEY is None:
+        _PROCESS_HMAC_KEY = secrets.token_bytes(32)
+    return _PROCESS_HMAC_KEY
 
 
 def hmac_placeholder(secret: str, key: bytes) -> str:

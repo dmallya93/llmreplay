@@ -6,7 +6,7 @@ Contributors and CI need agent record/replay without paid Anthropic/OpenAI keys.
 
 ## Decision
 
-Mint localhost free client keys (`sk-llmreplay-free-…`). Agents talk to LLMReplay proxy; proxy chains to Claude Code Router (CCR) → Ollama. Optional ccg-router fallback.
+Mint localhost free client keys (`llmreplay-free-…`). Agents talk to LLMReplay proxy; proxy chains to Claude Code Router (CCR) → Ollama. Optional ccg-router fallback.
 
 ## Consequences
 

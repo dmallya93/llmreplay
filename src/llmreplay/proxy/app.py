@@ -15,10 +15,17 @@ from starlette.routing import Route
 
 from llmreplay.config.profiles import LLMReplayFileConfig, load_llmreplay_yaml
 from llmreplay.core.match import match_key
+from llmreplay.core.volatility import DEFAULT_IGNORE_KEYS
 from llmreplay.proxy.config import ProxyConfig, ProxyMode
 from llmreplay.proxy.free_auth import enforce_free_key
 from llmreplay.proxy.normalize import normalize_request_event
 from llmreplay.proxy.routes import ROUTE_DENIED_BODY, is_allowed
+from llmreplay.proxy.sse import (
+    parse_openai_sse,
+    strip_stream_flag,
+    synthesize_sse,
+    wants_stream,
+)
 from llmreplay.scrub.engine import Scrubber, residual_hits_in_payload
 from llmreplay.store.cassette import CassetteStore
 
@@ -51,6 +58,7 @@ class ProxyState:
         free_mode: bool = False,
         free_key_store: Path | None = None,
         ollama_model: str = "qwen2.5-coder:latest",
+        ignore_keys: frozenset[str] | None = None,
     ) -> None:
         self.mode = mode
         self.cassette = cassette
@@ -64,6 +72,7 @@ class ProxyState:
         self.free_mode = free_mode
         self.free_key_store = free_key_store
         self.ollama_model = ollama_model
+        self.ignore_keys = ignore_keys if ignore_keys is not None else DEFAULT_IGNORE_KEYS
         self._hash_index: dict[str, dict[str, Any]] | None = None
 
     def rebuild_index(self) -> dict[str, dict[str, Any]]:
@@ -104,6 +113,7 @@ def create_app(
     yaml_cfg = file_config or load_llmreplay_yaml(config.config_path)
     profile = yaml_cfg.resolved_profile(config.profile)
     fail_residual = yaml_cfg.fail_on_residual_secrets(config.profile)
+    ignore_keys = frozenset(yaml_cfg.merged_ignore(config.profile)) | DEFAULT_IGNORE_KEYS
     built_scrubber = scrubber or Scrubber(
         extra_scrub_paths=yaml_cfg.merged_scrub_paths(config.profile),
     )
@@ -120,6 +130,7 @@ def create_app(
         free_mode=config.free_mode,
         free_key_store=config.free_key_store,
         ollama_model=config.ollama_model,
+        ignore_keys=ignore_keys,
     )
     # Touch resolved profile so sticky/ci validation runs at startup.
     _ = profile
@@ -145,14 +156,16 @@ def create_app(
 
     async def models(request: Request) -> Response:
         if state.mode == "replay":
-            # Prefer cassette hit; else synthetic catalog (SPEC S5).
             event = normalize_request_event(
                 method="GET",
                 path="/v1/models",
                 headers=dict(request.headers),
                 body=None,
             )
-            key = match_key(state.scrubber.scrub_event(event))
+            key = match_key(
+                state.scrubber.scrub_event(event),
+                ignore_keys=state.ignore_keys,
+            )
             if key in state.hash_index:
                 return JSONResponse(state.hash_index[key])
             return JSONResponse(SYNTHETIC_MODELS)
@@ -167,8 +180,6 @@ def create_app(
                 {"error": {"type": "llmreplay_protocol", "message": "invalid JSON body"}},
                 status_code=400,
             )
-        # Scrub runs on the normalized event before cassette write (SPEC S2).
-        # Upstream still receives the original bytes in record mode.
         return await _forward_or_record(request, body=body, raw=raw)
 
     async def _forward_or_record(
@@ -186,6 +197,8 @@ def create_app(
         if denied is not None:
             return denied
 
+        stream = wants_stream(body, dict(request.headers))
+        # ``stream`` is in DEFAULT_IGNORE_KEYS — match ignores transport mode.
         event = normalize_request_event(
             method=method,
             path=path,
@@ -193,7 +206,7 @@ def create_app(
             body=body,
         )
         scrubbed_event = state.scrubber.scrub_event(event)
-        key = match_key(scrubbed_event)
+        key = match_key(scrubbed_event, ignore_keys=state.ignore_keys)
 
         if state.mode == "replay":
             hit = state.hash_index.get(key)
@@ -209,9 +222,16 @@ def create_app(
                     },
                     status_code=409,
                 )
+            if stream:
+                return Response(
+                    content=synthesize_sse(path, hit),
+                    status_code=200,
+                    media_type="text/event-stream",
+                    headers={"Cache-Control": "no-cache"},
+                )
             return JSONResponse(hit)
 
-        # record mode
+        # record mode — force non-streaming upstream; synthesize SSE to client if needed
         if not state.upstream_base:
             return JSONResponse(
                 {
@@ -222,6 +242,10 @@ def create_app(
                 },
                 status_code=500,
             )
+        upstream_body = strip_stream_flag(body) if isinstance(body, dict) else body
+        upstream_raw = (
+            json.dumps(upstream_body).encode("utf-8") if isinstance(upstream_body, dict) else raw
+        )
         url = f"{state.upstream_base}{path}"
         headers = {
             k: v for k, v in request.headers.items() if k.lower() not in {"host", "content-length"}
@@ -230,11 +254,15 @@ def create_app(
             upstream = await client.request(
                 method,
                 url,
-                content=raw if raw is not None else None,
+                content=upstream_raw,
                 headers=headers,
             )
+        content_type = (upstream.headers.get("content-type") or "").lower()
         try:
-            resp_body: Any = upstream.json()
+            if "text/event-stream" in content_type:
+                resp_body: Any = parse_openai_sse(upstream.text)
+            else:
+                resp_body = upstream.json()
         except json.JSONDecodeError:
             resp_body = {"raw_text": upstream.text}
 
@@ -267,6 +295,13 @@ def create_app(
             )
             state.rebuild_index()
 
+        if stream and isinstance(resp_body, dict):
+            return Response(
+                content=synthesize_sse(path, resp_body),
+                status_code=upstream.status_code,
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache"},
+            )
         if isinstance(resp_body, dict):
             return JSONResponse(resp_body, status_code=upstream.status_code)
         return Response(content=upstream.content, status_code=upstream.status_code)

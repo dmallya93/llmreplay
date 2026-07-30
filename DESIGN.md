@@ -18,6 +18,7 @@
 | C8 Tweak/fork/sticky | **done** | `3e8eaa8` | fork/tweak/sticky/templates |
 | C9 Agent parity | **done** | `ea6de54` | multi-turn Claude+Codex goldens |
 | C10 Migrate + release | **done** | `71d19bd` | migrate, CI matrix, release smoke |
+| Alpha harden (post-C10) | **done** | (pending) | SSE synth, ignore→match, loopback, HMAC |
 
 **Rule:** Update this table in the same PR that completes a chunk. Every chunk needs tests + **cheap-model** review before push (see [docs/dev/coding-standards.md](docs/dev/coding-standards.md); **no Opus for routine review**).
 
@@ -161,7 +162,7 @@ MUST reject unlisted routes with `404 LLMREPLAY_ROUTE_DENIED`.
 ### S8. Free-mode startup order (`--free`)
 
 1. `llmreplay test-stack status` MUST be healthy (CCR + Ollama ping) else exit 4.
-2. Mint/load free client key (`sk-llmreplay-free-…`); bind 127.0.0.1 only unless `--allow-remote`.
+2. Mint/load free client key (`llmreplay-free-…`); bind 127.0.0.1 only unless `--allow-remote`.
 3. Start LLMReplay proxy; set agent env:
    - Claude: `ANTHROPIC_BASE_URL=http://127.0.0.1:<port>`, `ANTHROPIC_API_KEY=<free>`, `ANTHROPIC_AUTH_TOKEN=<free>`
    - Codex: `OPENAI_BASE_URL=http://127.0.0.1:<port>/v1`, `OPENAI_API_KEY=<free>`

@@ -133,6 +133,7 @@ def _proxy_config(
     config_file: Path | None,
     free_mode: bool = False,
     free_key_store: Path | None = None,
+    allow_remote: bool = False,
 ) -> ProxyConfig:
     return ProxyConfig(
         mode=mode,  # type: ignore[arg-type]
@@ -144,6 +145,7 @@ def _proxy_config(
         config_path=config_file,
         free_mode=free_mode,
         free_key_store=free_key_store,
+        allow_non_loopback=allow_remote,
     )
 
 
@@ -156,6 +158,13 @@ def proxy(
     port: Annotated[int, typer.Option("--port")] = 7432,
     profile: Annotated[str, typer.Option("--profile")] = "local",
     config_file: Annotated[Path | None, typer.Option("--config")] = None,
+    allow_remote: Annotated[
+        bool,
+        typer.Option(
+            "--allow-remote",
+            help="Allow non-loopback --host in replay (dangerous; no auth)",
+        ),
+    ] = False,
 ) -> None:
     """Run the local allowlisted LLM proxy (SPEC S5)."""
     try:
@@ -167,6 +176,7 @@ def proxy(
             port=port,
             profile=profile,
             config_file=config_file,
+            allow_remote=allow_remote,
         )
     except (ValidationError, ValueError) as exc:
         typer.echo(str(exc), err=True)
@@ -230,6 +240,13 @@ def replay(
         typer.Option("--free", help="Free-mode replay (still offline; documents free path)"),
     ] = False,
     free_key_store: Annotated[Path | None, typer.Option("--free-key-store")] = None,
+    allow_remote: Annotated[
+        bool,
+        typer.Option(
+            "--allow-remote",
+            help="Allow non-loopback --host (dangerous; no auth)",
+        ),
+    ] = False,
 ) -> None:
     """Start the proxy in replay mode, or `--check` cassette health offline."""
     if check:
@@ -256,6 +273,7 @@ def replay(
             config_file=config_file,
             free_mode=free,
             free_key_store=free_key_store,
+            allow_remote=allow_remote,
         )
     except (ValidationError, ValueError) as exc:
         typer.echo(str(exc), err=True)
@@ -272,6 +290,8 @@ def why(
         typer.Option("--request", help="Path to normalized request JSON"),
     ] = Path("request.json"),
     json_out: Annotated[bool, typer.Option("--json")] = False,
+    config_file: Annotated[Path | None, typer.Option("--config")] = None,
+    profile: Annotated[str, typer.Option("--profile")] = "local",
 ) -> None:
     """Explain a static miss and suggest mark-ignore (never auto-applied)."""
     try:
@@ -280,7 +300,12 @@ def why(
         typer.echo(str(exc), err=True)
         _footer(ExitCode.ROUTE_OR_PROTOCOL)
         raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL) from exc
-    result = diagnose_miss(cassette_dir=cassette, request_event=event)
+    result = diagnose_miss(
+        cassette_dir=cassette,
+        request_event=event,
+        config_path=config_file,
+        profile=profile,
+    )
     if json_out:
         typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
     else:

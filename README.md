@@ -5,7 +5,7 @@
 [![CI](https://github.com/dmallya93/llmreplay/actions/workflows/ci.yml/badge.svg)](https://github.com/dmallya93/llmreplay/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-> **Status:** Early alpha. Chunks ship incrementally. See [DESIGN.md](DESIGN.md) for architecture and progress.
+> **Status:** Early alpha (C0–C10 landed). See [docs/alpha-limitations.md](docs/alpha-limitations.md) and [DESIGN.md](DESIGN.md).
 
 ## Motivation
 
@@ -53,7 +53,7 @@ llmreplay why --cassette .llmreplay/demo --request /path/to/request.json
 llmreplay bundle --cassette .llmreplay/demo --output /tmp/llmreplay-bundle.zip
 ```
 
-Contract tests cover the same harness without a live server. Free CCR+Ollama stack lands in **C5**.
+Contract tests cover the same harness without a live server. Free CCR+Ollama: [docs/free-test-stack.md](docs/free-test-stack.md).
 
 See [docs/troubleshooting.md](docs/troubleshooting.md), [docs/reference/cli.md](docs/reference/cli.md), and [docs/free-test-stack.md](docs/free-test-stack.md).
 
@@ -68,6 +68,7 @@ Normative rules: [docs/SPEC.md](docs/SPEC.md).
 
 ## Documentation
 
+- [docs/alpha-limitations.md](docs/alpha-limitations.md) — what alpha does / does not claim
 - [docs/ci.md](docs/ci.md) — CI / release smoke / nightly
 - [docs/compatibility.md](docs/compatibility.md) — supported matrix
 - [docs/threat-model.md](docs/threat-model.md) — security boundaries

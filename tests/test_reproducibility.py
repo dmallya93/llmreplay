@@ -271,6 +271,30 @@ async def test_parallel_wrong_tool_result_misses(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
+def test_responses_input_function_outputs_order_stable() -> None:
+    """Responses API uses body.input — parallel function_call_output order must not change key."""
+    base_input = [
+        {"role": "user", "content": "x"},
+        {"type": "function_call_output", "call_id": "b", "output": "2"},
+        {"type": "function_call_output", "call_id": "a", "output": "1"},
+    ]
+    swapped = [base_input[0], base_input[2], base_input[1]]
+    a = normalize_request_event(
+        method="POST",
+        path="/v1/responses",
+        headers={},
+        body={"model": "m", "input": base_input},
+    )
+    b = normalize_request_event(
+        method="POST",
+        path="/v1/responses",
+        headers={},
+        body={"model": "m", "input": swapped},
+    )
+    assert match_key(a) == match_key(b)
+
+
+@pytest.mark.unit
 def test_openai_tool_role_order_does_not_change_match_key() -> None:
     base_msgs = [
         {"role": "user", "content": "x"},

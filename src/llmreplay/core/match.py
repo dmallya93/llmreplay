@@ -62,13 +62,16 @@ def static_projection(
 
 
 def _sort_tools_in_tree(value: Any) -> Any:
-    """Sort parallel tool blocks anywhere ``messages`` appears (incl. body.messages)."""
+    """Sort parallel tool blocks under ``messages`` and Responses ``input``."""
     if isinstance(value, dict):
         out: dict[str, Any] = {str(k): _sort_tools_in_tree(v) for k, v in value.items()}
-        messages = out.get("messages")
-        if isinstance(messages, list):
-            out["messages"] = [sort_tool_blocks(m) if isinstance(m, dict) else m for m in messages]
-            out["messages"] = _sort_openai_tool_message_runs(out["messages"])
+        for key in ("messages", "input"):
+            seq = out.get(key)
+            if isinstance(seq, list):
+                sorted_seq = [sort_tool_blocks(m) if isinstance(m, dict) else m for m in seq]
+                out[key] = _sort_openai_tool_message_runs(sorted_seq)
+                out[key] = _sort_openai_tool_calls_in_messages(out[key])
+                out[key] = _sort_responses_function_outputs(out[key])
         return out
     if isinstance(value, list):
         return [_sort_tools_in_tree(item) for item in value]
@@ -94,6 +97,49 @@ def _sort_openai_tool_message_runs(messages: list[Any]) -> list[Any]:
             out.extend(run)
             continue
         out.append(msg)
+        i += 1
+    return out
+
+
+def _sort_openai_tool_calls_in_messages(messages: list[Any]) -> list[Any]:
+    """Sort ``tool_calls`` arrays on assistant messages by id (parallel tools)."""
+    out: list[Any] = []
+    for msg in messages:
+        if not isinstance(msg, dict):
+            out.append(msg)
+            continue
+        calls = msg.get("tool_calls")
+        if isinstance(calls, list) and len(calls) > 1:
+            cloned = dict(msg)
+            cloned["tool_calls"] = sorted(
+                calls,
+                key=lambda c: str(c.get("id", "")) if isinstance(c, dict) else "",
+            )
+            out.append(cloned)
+        else:
+            out.append(msg)
+    return out
+
+
+def _sort_responses_function_outputs(items: list[Any]) -> list[Any]:
+    """Sort contiguous Responses ``function_call_output`` items by ``call_id``."""
+    out: list[Any] = []
+    i = 0
+    while i < len(items):
+        item = items[i]
+        if isinstance(item, dict) and item.get("type") == "function_call_output":
+            run: list[dict[str, Any]] = []
+            while i < len(items):
+                cur = items[i]
+                if isinstance(cur, dict) and cur.get("type") == "function_call_output":
+                    run.append(cur)
+                    i += 1
+                    continue
+                break
+            run.sort(key=lambda m: str(m.get("call_id", "")))
+            out.extend(run)
+            continue
+        out.append(item)
         i += 1
     return out
 

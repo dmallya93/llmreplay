@@ -26,7 +26,7 @@ Coding agents fail in ways unit tests miss: flaky tool order, prompt regressions
 | C3 | HMAC scrub + profiles | **Done** (`3f2486f`) |
 | C4 | `record` / `replay` / `why` / `doctor` / `bundle` | **Done** (`07586ae`) |
 | C5 | Free test-stack (CCR + Ollama) | **Done** (`ddd979c`) |
-| C6–C10 | Snapshots, hooks, fork/tweak, agent parity, release | C6–C8 **Done** (pending); C9–C10 planned |
+| C6–C10 | Snapshots, hooks, fork/tweak, agent parity, release | C6–C8 **Done** (`3e8eaa8`); C9–C10 planned |
 
 ## Quick start
 

@@ -10,7 +10,6 @@
 [![PyPI](https://img.shields.io/pypi/v/coding-agent-vcr.svg?logo=pypi&logoColor=white&color=blue)](https://pypi.org/project/coding-agent-vcr/)
 [![Python](https://img.shields.io/pypi/pyversions/coding-agent-vcr.svg?logo=python&logoColor=white&color=blue)](https://pypi.org/project/coding-agent-vcr/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![Downloads](https://img.shields.io/pypi/dm/coding-agent-vcr.svg?logo=pypi&logoColor=white&color=green)](https://pypi.org/project/coding-agent-vcr/)
 
 </div>
 

@@ -45,8 +45,20 @@ def load_decisions(cassette: CassetteStore) -> list[RecordedHookDecision]:
 def replay_decision(
     cassette: CassetteStore,
     request: HookRequest,
+    *,
+    live_tools: frozenset[str] | None = None,
 ) -> HookDecision:
-    """Force the recorded decision for this hook id; deny if missing (fail closed)."""
+    """Force the recorded decision for this hook id; deny if missing (fail closed).
+
+    Tools listed in ``live_tools`` (from ``mark-live``) bypass cassette force and
+    return ``allow`` so the real tool runs (SPEC live field class).
+    """
+    if live_tools and request.tool_name and request.tool_name in live_tools:
+        return HookDecision(
+            id=request.id,
+            decision="allow",
+            reason=f"mark-live:{request.tool_name}",
+        )
     for entry in load_decisions(cassette):
         if entry.id == request.id:
             return HookDecision(

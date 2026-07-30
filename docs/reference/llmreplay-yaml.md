@@ -17,8 +17,14 @@ profiles:
     ignore_drift: fail      # residual secrets → refuse cassette write (422)
   strict:
     ignore_drift: fail
-tools: {}
+tools: {}                  # mark-live Bash / __llm__ → {class: live}
 ```
+
+## Live tools
+
+- `llmreplay mark-live Bash` — on hook **replay**, PreToolUse for `Bash` returns `allow` (real tool runs) instead of forcing the cassette decision.
+- `llmreplay mark-live __llm__` — proxy **replay** forwards every LLM call to `--upstream` and does **not** read/write the cassette for those calls. Requires `replay --upstream …`.
+- Set `LLMREPLAY_CONFIG` when using installed hooks so live tool lists are loaded.
 
 ## Precedence
 

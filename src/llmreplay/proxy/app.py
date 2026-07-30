@@ -59,6 +59,7 @@ class ProxyState:
         free_key_store: Path | None = None,
         ollama_model: str = "qwen2.5-coder:latest",
         ignore_keys: frozenset[str] | None = None,
+        llm_live: bool = False,
     ) -> None:
         self.mode = mode
         self.cassette = cassette
@@ -73,6 +74,7 @@ class ProxyState:
         self.free_key_store = free_key_store
         self.ollama_model = ollama_model
         self.ignore_keys = ignore_keys if ignore_keys is not None else DEFAULT_IGNORE_KEYS
+        self.llm_live = llm_live
         self._hash_index: dict[str, dict[str, Any]] | None = None
 
     def rebuild_index(self) -> dict[str, dict[str, Any]]:
@@ -131,6 +133,7 @@ def create_app(
         free_key_store=config.free_key_store,
         ollama_model=config.ollama_model,
         ignore_keys=ignore_keys,
+        llm_live=yaml_cfg.is_llm_live(),
     )
     # Touch resolved profile so sticky/ci validation runs at startup.
     _ = profile
@@ -209,6 +212,29 @@ def create_app(
         key = match_key(scrubbed_event, ignore_keys=state.ignore_keys)
 
         if state.mode == "replay":
+            if state.llm_live:
+                if not state.upstream_base:
+                    return JSONResponse(
+                        {
+                            "error": {
+                                "type": "llmreplay_live",
+                                "message": (
+                                    "503 LLMREPLAY_LIVE — tools.__llm__ is live but "
+                                    "upstream_base is unset (pass --upstream)"
+                                ),
+                            }
+                        },
+                        status_code=503,
+                    )
+                return await _upstream_call(
+                    request,
+                    body=body,
+                    raw=raw,
+                    scrubbed_event=scrubbed_event,
+                    key=key,
+                    stream=stream,
+                    write_cassette=False,
+                )
             hit = state.hash_index.get(key)
             if hit is None:
                 return JSONResponse(
@@ -231,7 +257,27 @@ def create_app(
                 )
             return JSONResponse(hit)
 
-        # record mode — force non-streaming upstream; synthesize SSE to client if needed
+        return await _upstream_call(
+            request,
+            body=body,
+            raw=raw,
+            scrubbed_event=scrubbed_event,
+            key=key,
+            stream=stream,
+            write_cassette=True,
+        )
+
+    async def _upstream_call(
+        request: Request,
+        *,
+        body: Any,
+        raw: bytes | None,
+        scrubbed_event: dict[str, Any],
+        key: str,
+        stream: bool,
+        write_cassette: bool,
+    ) -> Response:
+        # force non-streaming upstream; synthesize SSE to client if needed
         if not state.upstream_base:
             return JSONResponse(
                 {
@@ -242,6 +288,8 @@ def create_app(
                 },
                 status_code=500,
             )
+        method = request.method.upper()
+        path = request.url.path
         upstream_body = strip_stream_flag(body) if isinstance(body, dict) else body
         upstream_raw = (
             json.dumps(upstream_body).encode("utf-8") if isinstance(upstream_body, dict) else raw
@@ -266,7 +314,7 @@ def create_app(
         except json.JSONDecodeError:
             resp_body = {"raw_text": upstream.text}
 
-        if upstream.status_code < 400:
+        if write_cassette and upstream.status_code < 400:
             stored_response = resp_body if isinstance(resp_body, dict) else {"data": resp_body}
             scrubbed_response = state.scrubber.scrub_response(stored_response)
             residual = residual_hits_in_payload(

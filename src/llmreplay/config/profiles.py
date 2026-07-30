@@ -86,6 +86,23 @@ class LLMReplayFileConfig(BaseModel):
                 out.append(item)
         return out
 
+    def live_tools(self) -> frozenset[str]:
+        """Tool names marked ``class: live`` via ``mark-live`` / yaml."""
+        names: set[str] = set()
+        for name, entry in self.tools.items():
+            if isinstance(entry, dict) and entry.get("class") == "live":
+                names.add(str(name))
+        return frozenset(names)
+
+    def is_live_tool(self, tool_name: str | None) -> bool:
+        if not tool_name:
+            return False
+        return tool_name in self.live_tools()
+
+    def is_llm_live(self) -> bool:
+        """True when LLM proxy calls must hit upstream even in replay."""
+        return self.is_live_tool("__llm__") or self.is_live_tool("llm")
+
 
 def load_llmreplay_yaml(path: Path | None = None) -> LLMReplayFileConfig:
     if path is None or not path.is_file():

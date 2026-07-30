@@ -19,6 +19,7 @@
 | C9 Agent parity | **done** | `ea6de54` | multi-turn Claude+Codex goldens |
 | C10 Migrate + release | **done** | `71d19bd` | migrate, CI matrix, release smoke |
 | Alpha harden (post-C10) | **done** | `8c9692f` | SSE synth, ignore→match, loopback, HMAC |
+| A1 live + nested digests | **in progress** | — | mark-live hooks/LLM; session digests |
 
 **Rule:** Update this table in the same PR that completes a chunk. Every chunk needs tests + **cheap-model** review before push (see [docs/dev/coding-standards.md](docs/dev/coding-standards.md); **no Opus for routine review**).
 

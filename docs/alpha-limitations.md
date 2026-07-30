@@ -8,6 +8,8 @@ Public **alpha** status for LLMReplay after C0–C10. Hermetic JSON proxy + CLI 
 - SSE **synthesis** on replay when the client sends `stream: true` (minimal Anthropic / OpenAI shapes).
 - HMAC scrub, profiles (`local` / `ci` / `strict`), `mark-ignore` → yaml → match keys.
 - Free test-stack keys (`llmreplay-free-…`) → proxy → CCR → Ollama.
+- `mark-live` tools bypass hook cassette force; `mark-live __llm__` live-proxies LLM on replay.
+- Nested session digests (`extensions.session`) + child verify helpers.
 - Migrate v0→v1, doctor, validate, bundle, fork/tweak, FS snapshots, Claude Code hooks install/verify.
 - Offline release smoke + hermetic CI.
 
@@ -16,11 +18,11 @@ Public **alpha** status for LLMReplay after C0–C10. Hermetic JSON proxy + CLI 
 | Area | Gap |
 |---|---|
 | Streaming fidelity | Synthesize-only; no exact provider event replay / thinking chunk boundaries |
-| Nested sessions | Parent/child cassette abort not fully wired |
-| `mark-live` | Yaml mutation exists; proxy live-pass-through for tools is incomplete |
+| Nested sessions | Parent/child **digest link + verify** shipped; depth-first replay orchestration still manual |
+| `mark-live` | Hooks honor live tools; `mark-live __llm__` forces proxy upstream on replay (needs `--upstream`) |
 | Repair CLI | Not shipped |
 | Taint / sticky writeback | Partial vs SPEC |
-| Coverage gate | Focused on match/scrub/migrate; proxy/hooks/snapshot not in ≥95% gate |
+| Coverage gate | Expanded to sse/config/session/hooks.recorder; full proxy/hooks still not gated |
 | Windows CI | Not in matrix yet |
 | Nightly Ollama | Documented; not required on every PR |
 

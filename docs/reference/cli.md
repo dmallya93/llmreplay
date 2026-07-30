@@ -63,7 +63,7 @@ Options:
 Mark a tool as live in llmreplay.yaml.
 
 Options:
-- `tool`: Tool name to mark live
+- `tool`: Tool name (e.g. Bash) or __llm__ for live LLM proxy
 - `--config`: 
 
 ### `llmreplay migrate`
@@ -113,6 +113,7 @@ Options:
 - `--port`: 
 - `--profile`: 
 - `--config`: 
+- `--upstream`: Required when mark-live __llm__ forces live LLM during replay
 - `--check`: Validate cassette for offline replay and exit
 - `--free`: Free-mode replay (still offline; documents free path)
 - `--free-key-store`: 

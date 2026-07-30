@@ -12,5 +12,9 @@ python -m pytest -q \
   --cov=llmreplay.scrub \
   --cov=llmreplay.store \
   --cov=llmreplay.migrate \
+  --cov=llmreplay.proxy.sse \
+  --cov=llmreplay.proxy.config \
+  --cov=llmreplay.session \
+  --cov=llmreplay.hooks.recorder \
   --cov-report=term-missing:skip-covered \
   --cov-fail-under=95

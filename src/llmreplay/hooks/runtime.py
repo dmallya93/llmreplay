@@ -6,6 +6,7 @@ import os
 import sys
 from pathlib import Path
 
+from llmreplay.config.profiles import load_llmreplay_yaml
 from llmreplay.hooks.models import HookDecision
 from llmreplay.hooks.protocol import (
     HookProtocolError,
@@ -25,6 +26,8 @@ def run_hook_main(*, mode: str | None = None, raw: bytes | None = None) -> int:
     """CLI/process entry used by installed hook scripts. Returns process exit code."""
     mode = (mode or os.environ.get("LLMREPLAY_HOOK_MODE") or "record").lower()
     cassette_dir = Path(os.environ.get("LLMREPLAY_CASSETTE", ".llmreplay/cassette"))
+    config_path = os.environ.get("LLMREPLAY_CONFIG")
+    cfg = load_llmreplay_yaml(Path(config_path) if config_path else None)
     if raw is None:
         raw = sys.stdin.buffer.read()
     try:
@@ -35,7 +38,11 @@ def run_hook_main(*, mode: str | None = None, raw: bytes | None = None) -> int:
 
     cassette = CassetteStore(cassette_dir)
     if mode == "replay":
-        decision = replay_decision(cassette, request)
+        decision = replay_decision(
+            cassette,
+            request,
+            live_tools=cfg.live_tools(),
+        )
         if decision.decision in {"deny", "error"}:
             print(tool_stub_response(request.tool_name), file=sys.stderr)
     else:

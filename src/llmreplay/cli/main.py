@@ -231,6 +231,13 @@ def replay(
     port: Annotated[int, typer.Option("--port")] = 7432,
     profile: Annotated[str, typer.Option("--profile")] = "ci",
     config_file: Annotated[Path | None, typer.Option("--config")] = None,
+    upstream: Annotated[
+        str | None,
+        typer.Option(
+            "--upstream",
+            help="Required when mark-live __llm__ forces live LLM during replay",
+        ),
+    ] = None,
     check: Annotated[
         bool,
         typer.Option("--check", help="Validate cassette for offline replay and exit"),
@@ -266,7 +273,7 @@ def replay(
         config = _proxy_config(
             mode="replay",
             cassette=cassette,
-            upstream=None,
+            upstream=upstream,
             host=host,
             port=port,
             profile=profile,
@@ -345,7 +352,10 @@ def mark_ignore(
 
 @app.command("mark-live")
 def mark_live_cmd(
-    tool: Annotated[str, typer.Argument(help="Tool name to mark live")],
+    tool: Annotated[
+        str,
+        typer.Argument(help="Tool name (e.g. Bash) or __llm__ for live LLM proxy"),
+    ],
     config_file: Annotated[Path, typer.Option("--config")] = Path("llmreplay.yaml"),
 ) -> None:
     """Mark a tool as live in llmreplay.yaml."""

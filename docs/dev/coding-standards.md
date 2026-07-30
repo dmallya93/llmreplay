@@ -1,6 +1,6 @@
 # Coding standards (enforced)
 
-These rules apply to **all** LLMReplay code and to any agent that implements or reviews a chunk.
+These rules apply to **all** LLMReplay code and to any agent that implements or reviews changes.
 
 ## Non-negotiables
 
@@ -40,12 +40,12 @@ class CassetteTransaction(BaseModel):
 
 ## Agent coding policy
 
-When an agent implements a chunk it MUST:
+When an agent implements a change it MUST:
 
 1. Read `docs/SPEC.md` + this file first.
 2. Prefer extending existing Pydantic models over new `dict` bags.
 3. Run `ruff check` + `pytest` before claiming done.
-4. Update `DESIGN.md` progress in the **same** chunk commit.
+4. Amend `docs/SPEC.md` (and `DESIGN.md` if architecture/usage changes) in the same PR.
 
 ## Agent review policy (cheap models only)
 
@@ -56,7 +56,7 @@ Code review and validation agents MUST use **cost-efficient** models, for exampl
 - `claude-4.6-sonnet-high-thinking` (only if needed)
 - `cursor-grok-4.5-high`
 
-**Do NOT use Claude Opus 4.6 (or other flagship Opus-class models) for routine code review or validation.** Reserve the largest models for rare architecture disputes, not per-chunk review.
+**Do NOT use Claude Opus 4.6 (or other flagship Opus-class models) for routine code review or validation.** Reserve the largest models for rare architecture disputes.
 
 Review checklist:
 

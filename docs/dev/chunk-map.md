@@ -1,16 +1,18 @@
-# Chunk map
+# Package map
 
-| Chunk | Primary packages | Docs to update |
+Where code and docs live for each subsystem (see also [DESIGN.md](../../DESIGN.md)).
+
+| Package | Responsibility | Docs |
 |---|---|---|
-| C0 | `llmreplay.cli`, `llmreplay.core.exit_codes` | README, SPEC, DESIGN, SUPPORT |
-| C1 | `llmreplay.core.match`, `llmreplay.store` | concepts/field-classes, cassette schema |
-| C2 | `llmreplay.proxy` | architecture proxy section, ProxyConfig |
-| standards | `store/models`, `proxy/config` | coding-standards.md |
-| C3 | `llmreplay.scrub`, profiles | llmreplay-yaml reference |
-| C4 | CLI record/replay/why/doctor/bundle | quickstart stub, troubleshooting |
-| C5 | `llmreplay.teststack`, keys | free-test-stack.md, examples |
-| C6 | `llmreplay.snapshot` | matching + snapshots |
-| C7 | `llmreplay.hooks` | integrations/claude-code |
-| C8 | fork/tweak/sticky | concepts |
-| C9 | adapters claude/codex | integrations/* |
-| C10 | migrate, release | ci.md, threat-model |
+| `llmreplay.cli`, `llmreplay.core.exit_codes` | CLI, exit codes | README, SPEC, SUPPORT |
+| `llmreplay.core.match`, `llmreplay.store` | Match / cassette store | concepts/field-classes, cassette schema |
+| `llmreplay.proxy` | Allowlisted proxy + SSE | architecture in DESIGN, ProxyConfig |
+| `llmreplay.scrub`, `llmreplay.config` | HMAC scrub, profiles | llmreplay-yaml reference |
+| `llmreplay.diagnose` | why / doctor / validate / bundle / mark-* | troubleshooting, quickstart |
+| `llmreplay.teststack` | CCR + Ollama + free keys | free-test-stack.md, examples |
+| `llmreplay.snapshot` | FS snapshots | concepts/snapshots |
+| `llmreplay.hooks` | Claude Code hooks | integrations/claude-code |
+| `llmreplay.lineage` | fork / tweak / sticky | concepts/fork-tweak |
+| `llmreplay.session` | Nested cassette digests | DESIGN nested sessions |
+| `llmreplay.parity` | Agent protocol goldens | integrations/* |
+| `llmreplay.migrate` | Schema migrate | ci.md, compatibility |

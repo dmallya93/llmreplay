@@ -1,6 +1,6 @@
 # Alpha limitations
 
-Public **alpha** status for LLMReplay after C0–C10. Hermetic JSON proxy + CLI are usable; agent-facing edges still incomplete relative to [SPEC.md](SPEC.md).
+Public **alpha** status for LLMReplay. Hermetic JSON proxy + CLI are usable; agent-facing edges still incomplete relative to [SPEC.md](SPEC.md). See [DESIGN.md](../DESIGN.md) for architecture and usage.
 
 ## Works today
 

@@ -5,7 +5,7 @@
 [![CI](https://github.com/dmallya93/llmreplay/actions/workflows/ci.yml/badge.svg)](https://github.com/dmallya93/llmreplay/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-> **Status:** Early alpha (C0–C10 landed). See [docs/alpha-limitations.md](docs/alpha-limitations.md) and [DESIGN.md](DESIGN.md).
+> **Status:** Early alpha. See [docs/alpha-limitations.md](docs/alpha-limitations.md) and [DESIGN.md](DESIGN.md).
 
 ## Motivation
 
@@ -15,18 +15,6 @@ Coding agents fail in ways unit tests miss: flaky tool order, prompt regressions
 |---|---|
 | Deterministic offline replay + CI goldens | **LLMReplay** |
 | Live traces, evals, cost dashboards | [AgentReplay](https://agentreplay.dev/) (see [compare](docs/compare-agentreplay.md)) |
-
-## Deliverables (roadmap)
-
-| Chunk | Capability | Status |
-|---|---|---|
-| C0 | OSS bootstrap, SPEC, CLI skeleton, exit codes | **Done** (`3056aca`) |
-| C1 | Field model, cassette store, match/hash | **Done** (`6f35e2e`) |
-| C2 | Local proxy (Anthropic + OpenAI + Responses) | **Done** (`23da04d`) |
-| C3 | HMAC scrub + profiles | **Done** (`3f2486f`) |
-| C4 | `record` / `replay` / `why` / `doctor` / `bundle` | **Done** (`07586ae`) |
-| C5 | Free test-stack (CCR + Ollama) | **Done** (`ddd979c`) |
-| C6–C10 | Snapshots, hooks, fork/tweak, agent parity, release | **Done** (`71d19bd`) |
 
 ## Quick start
 
@@ -76,7 +64,7 @@ Normative rules: [docs/SPEC.md](docs/SPEC.md).
 - [docs/reference/cli.md](docs/reference/cli.md) — generated CLI reference
 - [docs/reference/llmreplay-yaml.md](docs/reference/llmreplay-yaml.md) — profile config
 - [docs/free-test-stack.md](docs/free-test-stack.md) — CCR + Ollama
-- [DESIGN.md](DESIGN.md) — architecture + progress tracker
+- [DESIGN.md](DESIGN.md) — architecture, design locks, and usage
 - [docs/SPEC.md](docs/SPEC.md) — normative implementation contract
 - [CONTRIBUTING.md](CONTRIBUTING.md) — 30-minute contributor path
 - [SUPPORT.md](SUPPORT.md) — what we will / will not support

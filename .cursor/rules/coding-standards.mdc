@@ -11,6 +11,5 @@ alwaysApply: true
 - Follow [docs/dev/coding-standards.md](docs/dev/coding-standards.md).
 - Use **Pydantic v2** for configs, manifests, and cross-module payloads (`extra="forbid"` unless SPEC allows extensions).
 - Type-hint all public APIs; top-level imports only; Ruff-clean; double quotes.
-- Amend `docs/SPEC.md` / `DESIGN.md` in the same change as behavior.
-- Commit **once per completed chunk** after tests pass; update DESIGN progress in that commit.
+- Amend `docs/SPEC.md` / `DESIGN.md` in the same change as behavior (architecture/usage for DESIGN).
 - Code review / validation: use **cheap models only** (composer-2.5-fast, gpt-5.6-*-medium, grok, sonnet). **Never use Opus 4.6 for routine review.**

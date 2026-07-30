@@ -4,7 +4,7 @@
 **Language:** MUST / MUST NOT / SHOULD.  
 **Process:** Any new behavior requires an amend to this document in the same PR as code.
 
-See [DESIGN.md](../DESIGN.md) for motivation, chunks, validation, and customer/support model.
+See [DESIGN.md](../DESIGN.md) for architecture, design locks, and usage. Alpha gaps: [alpha-limitations.md](alpha-limitations.md).
 
 ---
 

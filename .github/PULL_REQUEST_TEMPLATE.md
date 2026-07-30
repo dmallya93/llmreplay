@@ -1,10 +1,10 @@
 ## Summary
 
-<!-- What chunk / change? Update DESIGN.md progress table. -->
+<!-- What changed and why? -->
 
 ## Checklist
 
-- [ ] SPEC/DESIGN amended if behavior changed
+- [ ] SPEC/DESIGN amended if behavior or architecture changed
 - [ ] Tests added/updated
 - [ ] Docs/examples updated (doc-with-code)
 - [ ] No secrets in fixtures

@@ -69,16 +69,16 @@ def _sort_tools_in_tree(value: Any) -> Any:
             seq = out.get(key)
             if isinstance(seq, list):
                 sorted_seq = [sort_tool_blocks(m) if isinstance(m, dict) else m for m in seq]
-                out[key] = _sort_openai_tool_message_runs(sorted_seq)
-                out[key] = _sort_openai_tool_calls_in_messages(out[key])
-                out[key] = _sort_responses_function_outputs(out[key])
+                out[key] = sort_openai_tool_message_runs(sorted_seq)
+                out[key] = sort_openai_tool_calls_in_messages(out[key])
+                out[key] = sort_responses_function_outputs(out[key])
         return out
     if isinstance(value, list):
         return [_sort_tools_in_tree(item) for item in value]
     return value
 
 
-def _sort_openai_tool_message_runs(messages: list[Any]) -> list[Any]:
+def sort_openai_tool_message_runs(messages: list[Any]) -> list[Any]:
     """Sort contiguous OpenAI ``role=tool`` messages by ``tool_call_id``."""
     out: list[Any] = []
     i = 0
@@ -101,7 +101,7 @@ def _sort_openai_tool_message_runs(messages: list[Any]) -> list[Any]:
     return out
 
 
-def _sort_openai_tool_calls_in_messages(messages: list[Any]) -> list[Any]:
+def sort_openai_tool_calls_in_messages(messages: list[Any]) -> list[Any]:
     """Sort ``tool_calls`` arrays on assistant messages by id (parallel tools)."""
     out: list[Any] = []
     for msg in messages:
@@ -121,7 +121,7 @@ def _sort_openai_tool_calls_in_messages(messages: list[Any]) -> list[Any]:
     return out
 
 
-def _sort_responses_function_outputs(items: list[Any]) -> list[Any]:
+def sort_responses_function_outputs(items: list[Any]) -> list[Any]:
     """Sort contiguous Responses ``function_call_output`` items by ``call_id``."""
     out: list[Any] = []
     i = 0

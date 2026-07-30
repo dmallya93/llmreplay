@@ -14,6 +14,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
+from llmreplay.adapters import adapter_for_path
 from llmreplay.config.profiles import STRICT_PROFILES, LLMReplayFileConfig, load_llmreplay_yaml
 from llmreplay.core.match import match_key
 from llmreplay.core.volatility import DEFAULT_IGNORE_KEYS
@@ -277,8 +278,10 @@ def create_app(
                     status_code=409,
                 )
             if stream:
+                adapter = adapter_for_path(path)
+                sse_body = adapter.synthesize_sse(hit) if adapter else synthesize_sse(path, hit)
                 return Response(
-                    content=synthesize_sse(path, hit),
+                    content=sse_body,
                     status_code=200,
                     media_type="text/event-stream",
                     headers={"Cache-Control": "no-cache"},
@@ -383,8 +386,12 @@ def create_app(
             state.index_put(key, scrubbed_response)
 
         if stream and isinstance(resp_body, dict):
+            adapter = adapter_for_path(path)
+            sse_body = (
+                adapter.synthesize_sse(resp_body) if adapter else synthesize_sse(path, resp_body)
+            )
             return Response(
-                content=synthesize_sse(path, resp_body),
+                content=sse_body,
                 status_code=upstream.status_code,
                 media_type="text/event-stream",
                 headers={"Cache-Control": "no-cache"},

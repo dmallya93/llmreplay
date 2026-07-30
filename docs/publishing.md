@@ -1,6 +1,9 @@
 # Publishing to PyPI
 
-Package name on PyPI: **`llm-replay`** (the name `llmreplay` is taken by an unrelated project).
+Package name on PyPI: **`coding-agent-vcr`**.
+
+(`llmreplay` and `llm-replay` are unavailable — taken / rejected as too similar.)
+
 CLI / import remain `llmreplay`.
 
 > **Do not run Publish until Trusted Publisher is configured.** Unconfigured runs fail and show red on the Actions tab. CI already builds + `twine check` the package on every push.
@@ -9,7 +12,7 @@ CLI / import remain `llmreplay`.
 
 1. Create a PyPI account (if needed) and enable 2FA.
 2. Open [PyPI publishing settings](https://pypi.org/manage/account/publishing/) → **Add a new pending publisher**:
-   - **PyPI project name:** `llm-replay`
+   - **PyPI project name:** `coding-agent-vcr`
    - **Owner:** `dmallya93`
    - **Repository:** `llmreplay`
    - **Workflow name:** `publish.yml`
@@ -26,7 +29,7 @@ gh run watch
 Then verify:
 
 ```bash
-pip install -U llm-replay
+pip install -U coding-agent-vcr
 llmreplay version
 ```
 

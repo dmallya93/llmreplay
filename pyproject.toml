@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "llm-replay"
+name = "coding-agent-vcr"
 version = "0.1.0"
 description = "VCR / time-travel replay for Claude Code and Codex — deterministic offline agent testing"
 readme = "README.md"

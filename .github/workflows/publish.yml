@@ -1,8 +1,8 @@
 name: Publish
 
-# Manual PyPI publish for package name ``llm-replay``.
+# Manual PyPI publish for package name ``coding-agent-vcr``.
 # Setup (once): https://pypi.org/manage/account/publishing/
-#   - PyPI project: llm-replay
+#   - PyPI project: coding-agent-vcr
 #   - Owner: dmallya93, repo: llmreplay, workflow: publish.yml, environment: pypi
 # Optional fallback: repository secret PYPI_TOKEN (PyPI API token).
 on:

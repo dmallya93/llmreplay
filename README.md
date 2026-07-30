@@ -3,8 +3,8 @@
 **VCR / time-travel for coding agents.** Record Claude Code or Codex once, then replay offline — stop, tweak, fork, and assert — without burning tokens or waiting on nondeterministic model runs.
 
 [![CI](https://github.com/dmallya93/llmreplay/actions/workflows/ci.yml/badge.svg)](https://github.com/dmallya93/llmreplay/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/llm-replay.svg)](https://pypi.org/project/llm-replay/)
-[![Python](https://img.shields.io/pypi/pyversions/llm-replay.svg)](https://pypi.org/project/llm-replay/)
+[![PyPI](https://img.shields.io/pypi/v/coding-agent-vcr.svg)](https://pypi.org/project/coding-agent-vcr/)
+[![Python](https://img.shields.io/pypi/pyversions/coding-agent-vcr.svg)](https://pypi.org/project/coding-agent-vcr/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 > **Status:** Early alpha. See [docs/alpha-limitations.md](docs/alpha-limitations.md).
@@ -14,12 +14,12 @@
 ## Install
 
 ```bash
-pip install llm-replay
+pip install coding-agent-vcr
 export LLMREPLAY_HMAC_KEY=dev-local-hmac   # recommended; required for ci/strict record
 llmreplay doctor
 ```
 
-> PyPI package name is **`llm-replay`** (`llmreplay` was already taken). The CLI and Python import remain `llmreplay`.
+> PyPI package name is **`coding-agent-vcr`** (`llmreplay` / `llm-replay` were taken or blocked as too similar). The CLI and Python import remain `llmreplay`.
 
 ## 60-second hermetic win
 

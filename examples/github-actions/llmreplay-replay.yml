@@ -1,0 +1,30 @@
+# Consumer CI — LLMReplay replay verification
+#
+# Copy this workflow into your repo's .github/workflows/ to verify cassettes
+# on every PR. Set LLMREPLAY_HMAC_KEY as a repository secret.
+
+name: LLMReplay Replay Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install LLMReplay
+        run: pip install coding-agent-vcr
+
+      - name: Replay check
+        env:
+          LLMREPLAY_HMAC_KEY: ${{ secrets.LLMREPLAY_HMAC_KEY }}
+        run: |
+          llmreplay replay --check --cassette .llmreplay/cassette --profile ci

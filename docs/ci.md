@@ -30,6 +30,16 @@ CI generates `LLMREPLAY_HMAC_KEY` with `openssl rand -hex 32` per job (ephemeral
 | `.github/workflows/nightly.yml` | schedule / label | free-stack probe + optional Ollama |
 | `.github/workflows/publish.yml` | `workflow_dispatch` | manual PyPI publish |
 
+## Consumer repos
+
+To add LLMReplay replay verification to your own repo:
+
+1. Copy `examples/github-actions/llmreplay-replay.yml` into `.github/workflows/`.
+2. Set `LLMREPLAY_HMAC_KEY` as a repository secret.
+3. Copy `examples/AGENTS.llmreplay.md` content into your `AGENTS.md` or `CLAUDE.md`.
+
+The workflow runs `llmreplay replay --check` on every PR, verifying cassettes are valid for offline replay.
+
 ## Network policy
 
 Unmarked replay MUST NOT open outbound sockets (except loopback health). Explicit `mark-live __llm__` may call `--upstream` (`--allow-live` under `ci`/`strict`). Non-loopback bind requires `--allow-remote` **and** `--free` (free-key auth).

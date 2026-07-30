@@ -48,6 +48,10 @@ Agents talk **HTTP loopback** only (`http://127.0.0.1:<port>`). No MITM TLS. Do 
 | `llmreplay.session` | Nested parent/child cassette digests |
 | `llmreplay.migrate` | Schema upgrades |
 | `llmreplay.parity` | Agent protocol goldens |
+| `llmreplay.adapters` | ProtocolAdapter registry (Anthropic, OpenAI) |
+| `llmreplay.transport` | In-process httpx transports (ReplayTransport, RecordTransport) |
+| `llmreplay.pytest_plugin` | pytest plugin (entry point `pytest11`) |
+| `plugins/llmreplay` | Claude Code plugin + skills |
 
 ---
 

@@ -1,4 +1,6 @@
-# Free test-stack (CCR + Ollama)
+# Free test-stack (CCR + Ollama) — optional
+
+> **Note:** The free test-stack is optional. LLMReplay works with any Anthropic/OpenAI-compatible upstream via `--upstream`. Use `llmreplay run` for the simplest path. This page documents the CCR+Ollama setup for fully local, $0 recording.
 
 Local $0 LLM path for record/replay (SPEC S8):
 

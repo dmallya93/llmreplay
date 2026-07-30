@@ -1,11 +1,24 @@
 # Codex integration
 
-## Base URL
+## Quick start (`llmreplay run`)
+
+```bash
+# Record one Codex turn
+llmreplay run --mode record --cassette .llmreplay/demo \
+  --upstream http://127.0.0.1:3456 -- codex --prompt "say hi"
+
+# Replay offline
+llmreplay run --mode replay --cassette .llmreplay/demo -- codex --prompt "say hi"
+```
+
+`llmreplay run` sets `OPENAI_BASE_URL` / `OPENAI_API_KEY` automatically.
+
+## Two-terminal workflow
 
 ```bash
 export OPENAI_BASE_URL=http://127.0.0.1:7432/v1
-export OPENAI_API_KEY=$(llmreplay keys create --free --print-env | …)
-llmreplay record --free
+export OPENAI_API_KEY=unused-local
+llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
 ```
 
 ## Responses API

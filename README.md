@@ -11,80 +11,149 @@
 
 ![LLMReplay demo: record, why, replay](https://raw.githubusercontent.com/dmallya93/llmreplay/main/docs/assets/demo-terminal.jpg)
 
-## Install
+---
+
+## Get started in 30 seconds
 
 ```bash
 pip install coding-agent-vcr
-export LLMREPLAY_HMAC_KEY=dev-local-hmac   # recommended; required for ci/strict record
+export LLMREPLAY_HMAC_KEY=dev-local-hmac
 llmreplay doctor
 ```
 
-> PyPI package name is **`coding-agent-vcr`** (`llmreplay` / `llm-replay` were taken or blocked as too similar). The CLI and Python import remain `llmreplay`.
+> **Note:** PyPI package name is `coding-agent-vcr` (other names were taken). The CLI and import remain `llmreplay`.
 
-## 60-second hermetic win
+---
+
+## Record, replay, diagnose
 
 ```bash
-# Clone for the smoke script, or use record/replay against your own stub:
+# 1. Record an agent turn (proxy + child in one process):
+llmreplay run --mode record --cassette .llmreplay/demo \
+  --upstream http://127.0.0.1:3456 -- claude --print
+
+# 2. Replay offline — deterministic, no tokens burned:
+llmreplay run --mode replay --cassette .llmreplay/demo -- claude --print
+
+# 3. On a miss — see exactly what changed:
+llmreplay why --cassette .llmreplay/demo --request .llmreplay/demo/requests/<tx-id>.json
+
+# 4. Check cassette health for CI:
+llmreplay replay --check --cassette .llmreplay/demo
+```
+
+<details><summary>Two-terminal workflow (advanced)</summary>
+
+```bash
+# Terminal A — start proxy
+llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
+
+# Terminal B — point agent at proxy
+export ANTHROPIC_BASE_URL=http://127.0.0.1:7432
+export ANTHROPIC_API_KEY=unused-local
+# run one agent turn, then Ctrl-C the proxy
+
+llmreplay replay --cassette .llmreplay/demo --profile ci
+```
+
+</details>
+
+---
+
+## Why this exists
+
+Coding agents fail in ways unit tests miss:
+
+| Problem | Without LLMReplay | With LLMReplay |
+|---|---|---|
+| Flaky tool order across runs | Re-run and hope | Sorted canonically, deterministic match |
+| Prompt regressions | Unnoticed until prod | Golden cassettes catch diffs in CI |
+| CI needs live API keys + tokens | Expensive, slow, brittle | Fully offline replay from fixtures |
+| Can't reproduce that weird agent bug | "Works on my machine" | Fork cassette at turn N, tweak, replay |
+
+> Observability shows *what happened*. LLMReplay decides **what must match** and **re-executes** the trajectory.
+
+---
+
+## Core ideas
+
+```
+            record                     replay
+Agent ──→ LLMReplay Proxy ──→ LLM    Agent ──→ LLMReplay Proxy ──→ Cassette
+              │                                     │
+              ▼                                     ▼
+          Cassette (scrubbed)              Match by SHA-256 key
+```
+
+Every request/response field is classified:
+
+| Field class | Meaning | Example |
+|---|---|---|
+| **static** | Must match — drives agent behavior | `model`, `messages`, `tools` |
+| **ignore** | Noise — stripped before hashing | `timestamp`, `request_id` |
+| **scrub** | Secrets replaced with HMAC placeholders | API keys, tokens |
+| **live** | Always hit the real tool/LLM | `mark-live Bash`, `mark-live __llm__` |
+
+Normative rules: [SPEC.md](docs/SPEC.md). Architecture: [DESIGN.md](DESIGN.md).
+
+---
+
+## Integrations
+
+| Agent | Quick start |
+|---|---|
+| Claude Code | `llmreplay run --mode record -- claude --print "hi"` |
+| Codex | `llmreplay run --mode record -- codex --prompt "hi"` |
+| pytest | `@pytest.mark.llmreplay(cassette="...")` + `llmreplay_cassette` fixture |
+| GitHub Actions | Copy [`examples/github-actions/llmreplay-replay.yml`](examples/github-actions/llmreplay-replay.yml) |
+| Any agent | Set `ANTHROPIC_BASE_URL` or `OPENAI_BASE_URL` to the proxy |
+
+---
+
+## Use as a library
+
+```python
+from llmreplay import ReplayTransport
+import httpx
+
+transport = ReplayTransport(cassette_dir=Path(".llmreplay/cassette"))
+async with httpx.AsyncClient(transport=transport, base_url="http://llmreplay") as client:
+    resp = await client.post("/v1/messages", json={...})
+```
+
+Full API: [docs/reference/library.md](docs/reference/library.md).
+
+---
+
+## Hermetic smoke test
+
+```bash
 git clone https://github.com/dmallya93/llmreplay.git && cd llmreplay
 pip install -e ".[dev]"
 export LLMREPLAY_HMAC_KEY=dev-local-hmac
 ./scripts/smoke.sh
-# → smoke ok: record→replay (fake upstream)
+# smoke ok: record→replay (fake upstream)
 ```
 
-## Record → offline replay
+No Ollama, no paid APIs, no network — pure in-process replay.
 
-```bash
-# Terminal A — CCR (:3456) or any Anthropic/OpenAI-compatible stub
-llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
-
-# Terminal B — point Claude Code at the proxy
-export ANTHROPIC_BASE_URL=http://127.0.0.1:7432
-export ANTHROPIC_API_KEY=unused-local
-# run one agent turn, then stop record
-
-llmreplay replay --check --cassette .llmreplay/demo
-llmreplay replay --cassette .llmreplay/demo --profile ci
-
-# On a miss:
-llmreplay why --cassette .llmreplay/demo --request .llmreplay/demo/requests/<tx-id>.json
-```
-
-Prefer free CCR+Ollama: [docs/free-test-stack.md](docs/free-test-stack.md). Longer path: [docs/quickstart.md](docs/quickstart.md).
-
-## Why this exists
-
-Coding agents fail in ways unit tests miss: flaky tool order, prompt regressions, CI that needs live API keys, and bugs you cannot replay. Observability shows *what happened*. LLMReplay decides **what must match** and **re-executes** the trajectory from fixtures.
-
-| You want… | Use |
-|---|---|
-| Deterministic offline replay + CI goldens | **LLMReplay** |
-| Live traces, evals, cost dashboards | [AgentReplay](https://agentreplay.dev/) ([compare](docs/compare-agentreplay.md)) |
-
-## Core ideas
-
-- **static** — must match (drives agent behavior)
-- **ignore** — noise (timestamps, request ids); advisory only
-- **scrub** — secrets → HMAC placeholders before disk
-- **live** — always hit the real tool/LLM for that step (`mark-live`)
-
-Normative rules: [docs/SPEC.md](docs/SPEC.md). Architecture: [DESIGN.md](DESIGN.md).
+---
 
 ## Documentation
 
-- [docs/quickstart.md](docs/quickstart.md) — first green replay
-- [docs/publishing.md](docs/publishing.md) — PyPI Trusted Publisher + social preview
-- [docs/alpha-limitations.md](docs/alpha-limitations.md) — what alpha does / does not claim
-- [docs/ci.md](docs/ci.md) — CI / release smoke / nightly
-- [docs/compatibility.md](docs/compatibility.md) — supported matrix
-- [docs/threat-model.md](docs/threat-model.md) — security boundaries
-- [docs/troubleshooting.md](docs/troubleshooting.md) — miss / doctor / bundle
-- [docs/reference/cli.md](docs/reference/cli.md) — CLI reference
-- [docs/free-test-stack.md](docs/free-test-stack.md) — CCR + Ollama
-- [CONTRIBUTING.md](CONTRIBUTING.md) — contributor path & local gates
-- [SECURITY.md](SECURITY.md) — reporting & secret handling
+| Category | Links |
+|---|---|
+| **Getting started** | [Quickstart](docs/quickstart.md) / [Alpha limitations](docs/alpha-limitations.md) |
+| **Reference** | [CLI](docs/reference/cli.md) / [Library API](docs/reference/library.md) / [SPEC](docs/SPEC.md) |
+| **Integrations** | [Claude Code](docs/integrations/claude-code.md) / [Codex](docs/integrations/codex.md) / [pytest](docs/integrations/pytest.md) |
+| **Operations** | [CI](docs/ci.md) / [Portable cassettes](docs/portable-cassettes.md) / [Troubleshooting](docs/troubleshooting.md) |
+| **Security** | [Threat model](docs/threat-model.md) / [SECURITY.md](SECURITY.md) |
+| **Optional** | [Free test-stack](docs/free-test-stack.md) (CCR+Ollama, $0 local LLM) |
+| **Contributing** | [CONTRIBUTING.md](CONTRIBUTING.md) / [Publishing](docs/publishing.md) |
 
-## Contributing / local gates
+---
+
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/ci.md](docs/ci.md) for the CI-required validation commands (`pytest`, coverage gate, repro stress, smoke).
 

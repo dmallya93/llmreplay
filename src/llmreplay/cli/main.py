@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from llmreplay import __version__
 from llmreplay.cli.docs_gen import check_cli_reference, write_cli_reference
+from llmreplay.cli.run_cmd import run_with_proxy
 from llmreplay.core.exit_codes import EXIT_CODE_HELP, ExitCode
 from llmreplay.diagnose.bundle import create_bundle
 from llmreplay.diagnose.doctor import run_doctor
@@ -149,6 +150,71 @@ def _proxy_config(
         allow_non_loopback=allow_remote,
         allow_live=allow_live,
     )
+
+
+@app.command(
+    context_settings={"allow_extra_args": True, "allow_interspersed_args": False},
+)
+def run(
+    ctx: typer.Context,
+    mode: Annotated[
+        str,
+        typer.Option("--mode", help="record or replay"),
+    ] = "replay",
+    cassette: Annotated[
+        Path, typer.Option("--cassette", help="Cassette directory path"),
+    ] = Path(".llmreplay/cassette"),
+    upstream: Annotated[
+        str | None,
+        typer.Option("--upstream", help="Upstream LLM URL (record default: http://127.0.0.1:3456)"),
+    ] = None,
+    port: Annotated[
+        int, typer.Option("--port", help="Local proxy port"),
+    ] = 7432,
+    profile: Annotated[
+        str, typer.Option("--profile", help="Field-class profile (local, ci, strict)"),
+    ] = "local",
+    config_file: Annotated[
+        Path | None, typer.Option("--config", help="Path to llmreplay.yaml"),
+    ] = None,
+    free: Annotated[
+        bool, typer.Option("--free", help="Use CCR+Ollama free-stack as upstream"),
+    ] = False,
+    allow_live: Annotated[
+        bool,
+        typer.Option("--allow-live", help="Allow mark-live fields to hit real endpoints"),
+    ] = False,
+) -> None:
+    """Start proxy, run COMMAND with agent env wired, exit with its code.
+
+    Usage: llmreplay run [OPTIONS] -- COMMAND [ARGS...]
+    """
+    command = ctx.args
+    if not command:
+        typer.echo("usage: llmreplay run [OPTIONS] -- COMMAND [ARGS...]", err=True)
+        _footer(ExitCode.ROUTE_OR_PROTOCOL)
+        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL)
+    try:
+        config = _proxy_config(
+            mode=mode,
+            cassette=cassette,
+            upstream=upstream or ("http://127.0.0.1:3456" if mode == "record" else None),
+            host="127.0.0.1",
+            port=port,
+            profile=profile,
+            config_file=config_file,
+            free_mode=free,
+            allow_live=allow_live,
+        )
+    except (ValidationError, ValueError) as exc:
+        typer.echo(str(exc), err=True)
+        _footer(ExitCode.ROUTE_OR_PROTOCOL)
+        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL) from exc
+    exit_code = run_with_proxy(config=config, command=command)
+    code = ExitCode(exit_code) if exit_code in ExitCode.__members__.values() else None
+    if code is not None:
+        _footer(code)
+    raise typer.Exit(exit_code)
 
 
 @app.command()

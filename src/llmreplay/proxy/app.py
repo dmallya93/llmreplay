@@ -61,6 +61,7 @@ class ProxyState:
         ollama_model: str = "qwen2.5-coder:latest",
         ignore_keys: frozenset[str] | None = None,
         llm_live: bool = False,
+        allow_remote: bool = False,
     ) -> None:
         self.mode = mode
         self.cassette = cassette
@@ -76,6 +77,7 @@ class ProxyState:
         self.ollama_model = ollama_model
         self.ignore_keys = ignore_keys if ignore_keys is not None else DEFAULT_IGNORE_KEYS
         self.llm_live = llm_live
+        self.allow_remote = allow_remote
         self._hash_index: dict[str, dict[str, Any]] | None = None
 
     def rebuild_index(self) -> dict[str, dict[str, Any]]:
@@ -87,6 +89,13 @@ class ProxyState:
                 index[tx.static_hash] = json.loads(path.read_text(encoding="utf-8"))
         self._hash_index = index
         return index
+
+    def index_put(self, static_hash: str, response: dict[str, Any]) -> None:
+        """O(1) index update after a successful record write."""
+        if self._hash_index is None:
+            self.rebuild_index()
+        assert self._hash_index is not None
+        self._hash_index[static_hash] = response
 
     @property
     def hash_index(self) -> dict[str, dict[str, Any]]:
@@ -147,6 +156,7 @@ def create_app(
         ollama_model=config.ollama_model,
         ignore_keys=ignore_keys,
         llm_live=llm_live,
+        allow_remote=config.allow_non_loopback,
     )
     # Touch resolved profile so sticky/ci validation runs at startup.
     _ = profile
@@ -209,7 +219,12 @@ def create_app(
         if not is_allowed(method, path):
             return JSONResponse(ROUTE_DENIED_BODY, status_code=404)
 
-        denied = enforce_free_key(request, store_path=state.free_key_store)
+        denied = enforce_free_key(
+            request,
+            store_path=state.free_key_store,
+            require_free_key=state.free_mode,
+            allow_remote=state.allow_remote,
+        )
         if denied is not None:
             return denied
 
@@ -311,12 +326,23 @@ def create_app(
         headers = {
             k: v for k, v in request.headers.items() if k.lower() not in {"host", "content-length"}
         }
-        async with state.http_client_factory() as client:
-            upstream = await client.request(
-                method,
-                url,
-                content=upstream_raw,
-                headers=headers,
+        try:
+            async with state.http_client_factory() as client:
+                upstream = await client.request(
+                    method,
+                    url,
+                    content=upstream_raw,
+                    headers=headers,
+                )
+        except httpx.HTTPError as exc:
+            return JSONResponse(
+                {
+                    "error": {
+                        "type": "llmreplay_upstream_error",
+                        "message": f"503 LLMREPLAY_UPSTREAM — {exc}",
+                    }
+                },
+                status_code=503,
             )
         content_type = (upstream.headers.get("content-type") or "").lower()
         try:
@@ -354,7 +380,7 @@ def create_app(
                 response=scrubbed_response,
                 static_hash=key,
             )
-            state.rebuild_index()
+            state.index_put(key, scrubbed_response)
 
         if stream and isinstance(resp_body, dict):
             return Response(

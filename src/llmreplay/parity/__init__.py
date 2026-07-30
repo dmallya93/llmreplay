@@ -7,6 +7,7 @@ from llmreplay.parity.sessions import (
     claude_tool_session,
     codex_responses_session,
     openai_chat_tool_chain_session,
+    openai_parallel_tools_session,
     simple_echo_session,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "claude_tool_session",
     "codex_responses_session",
     "openai_chat_tool_chain_session",
+    "openai_parallel_tools_session",
     "simple_echo_session",
 ]

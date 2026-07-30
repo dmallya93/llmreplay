@@ -42,4 +42,9 @@ class ProxyConfig(BaseModel):
                 f"{self.mode} mode refuses non-loopback --host "
                 f"{self.host!r} (pass allow_non_loopback=True / --allow-remote)"
             )
+        if self.allow_non_loopback and not self.free_mode:
+            raise ValueError(
+                "non-loopback bind requires free_mode=True / --free "
+                "(unauthenticated open proxy otherwise)"
+            )
         return self

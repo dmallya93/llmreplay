@@ -273,8 +273,17 @@ def test_replay_refuses_non_loopback_host(tmp_path: Path) -> None:
         cassette_dir=tmp_path,
         host="0.0.0.0",
         allow_non_loopback=True,
+        free_mode=True,
     )
     assert ok.host == "0.0.0.0"
+    with pytest.raises(ValueError, match="free_mode"):
+        ProxyConfig(
+            mode="replay",
+            cassette_dir=tmp_path,
+            host="0.0.0.0",
+            allow_non_loopback=True,
+            free_mode=False,
+        )
 
 
 @pytest.mark.unit

@@ -68,10 +68,34 @@ def _sort_tools_in_tree(value: Any) -> Any:
         messages = out.get("messages")
         if isinstance(messages, list):
             out["messages"] = [sort_tool_blocks(m) if isinstance(m, dict) else m for m in messages]
+            out["messages"] = _sort_openai_tool_message_runs(out["messages"])
         return out
     if isinstance(value, list):
         return [_sort_tools_in_tree(item) for item in value]
     return value
+
+
+def _sort_openai_tool_message_runs(messages: list[Any]) -> list[Any]:
+    """Sort contiguous OpenAI ``role=tool`` messages by ``tool_call_id``."""
+    out: list[Any] = []
+    i = 0
+    while i < len(messages):
+        msg = messages[i]
+        if isinstance(msg, dict) and msg.get("role") == "tool":
+            run: list[dict[str, Any]] = []
+            while i < len(messages):
+                cur = messages[i]
+                if isinstance(cur, dict) and cur.get("role") == "tool":
+                    run.append(cur)
+                    i += 1
+                    continue
+                break
+            run.sort(key=lambda m: str(m.get("tool_call_id", "")))
+            out.extend(run)
+            continue
+        out.append(msg)
+        i += 1
+    return out
 
 
 def match_key(

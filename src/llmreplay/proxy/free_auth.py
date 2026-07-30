@@ -23,15 +23,31 @@ def enforce_free_key(
     request: Request,
     *,
     store_path: Path | None,
+    require_free_key: bool = False,
+    allow_remote: bool = False,
 ) -> JSONResponse | None:
-    """If a free key is presented, require loopback + quota. Return error response or None."""
+    """Validate free keys when presented, or when free_mode requires them.
+
+    Return an error response or None to continue.
+    """
     token = extract_bearer_token(request)
     if token is None or not token.startswith(FREE_KEY_PREFIX):
+        if require_free_key:
+            return JSONResponse(
+                {
+                    "error": {
+                        "type": "llmreplay_free_key",
+                        "message": "401 free mode requires llmreplay-free-* Authorization",
+                    }
+                },
+                status_code=401,
+            )
         return None
     peer = request.client.host if request.client else ""
     store = FreeKeyStore(store_path or (Path.home() / ".llmreplay" / "free-keys.json"))
     try:
-        store.assert_localhost(peer)
+        if not allow_remote:
+            store.assert_localhost(peer)
         if store.get(token) is None:
             return JSONResponse(
                 {

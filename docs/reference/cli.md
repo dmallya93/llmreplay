@@ -87,7 +87,8 @@ Options:
 - `--port`: 
 - `--profile`: 
 - `--config`: 
-- `--allow-remote`: Allow non-loopback --host in replay (dangerous; no auth)
+- `--free`: Require llmreplay-free-* Authorization
+- `--allow-remote`: Allow non-loopback --host (requires --free)
 
 ### `llmreplay record`
 
@@ -102,7 +103,7 @@ Options:
 - `--config`: 
 - `--free`: Free stack: default upstream CCR + cassette test_stack
 - `--free-key-store`: 
-- `--allow-remote`: Allow non-loopback --host (dangerous; open forward proxy)
+- `--allow-remote`: Allow non-loopback --host (requires --free; dangerous)
 
 ### `llmreplay replay`
 
@@ -118,7 +119,7 @@ Options:
 - `--check`: Validate cassette for offline replay and exit
 - `--free`: Free-mode replay (still offline; documents free path)
 - `--free-key-store`: 
-- `--allow-remote`: Allow non-loopback --host (dangerous; no auth)
+- `--allow-remote`: Allow non-loopback --host (requires --free)
 - `--allow-live`: Allow mark-live __llm__ under ci/strict (breaks hermetic replay)
 
 ### `llmreplay snapshot`

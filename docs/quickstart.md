@@ -1,51 +1,47 @@
 # Quickstart
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
+# Stable scrub placeholders across record/replay (required for ci/strict record):
+export LLMREPLAY_HMAC_KEY=dev-local-hmac
 llmreplay doctor
 ```
 
-## Hermetic path (no Ollama) — recommended first win
+## Hermetic first win (recommended)
 
 ```bash
 ./scripts/smoke.sh
-# Or: pytest -q
+# Or full reproducibility suite (parallel tools, chains, 10× identical replay):
+bash scripts/repro_stress.sh
 ```
 
-That exercises record→replay against an in-process fake upstream.
+These use an in-process fake upstream — no Ollama, no paid APIs. If smoke is green, the match/proxy path works.
 
-## Manual record → offline replay
+## Manual agent wiring (after smoke)
 
 ```bash
-# Terminal A — any Anthropic/OpenAI-compatible stub on :3456
-# Terminal B:
-llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
+# Prefer free stack if you have Ollama+CCR:
+eval "$(llmreplay keys create --free --print-env)"
+llmreplay record --free --cassette .llmreplay/demo
 
-# Wire the agent (Claude example):
+# Or point at any Anthropic/OpenAI-compatible stub:
+# llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
+
+# Agent env (Claude):
 export ANTHROPIC_BASE_URL=http://127.0.0.1:7432
-export ANTHROPIC_API_KEY=unused-local
-# run one agent turn, then stop the record proxy
+export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-unused-local}"
+# run one agent turn — if cassette stays empty, traffic missed the proxy
+# Ctrl-C the record proxy when done
 
 llmreplay replay --check --cassette .llmreplay/demo
 llmreplay replay --cassette .llmreplay/demo --profile ci
 ```
 
-On a miss, point `why` at a stored request blob:
+On a miss:
 
 ```bash
 llmreplay why --cassette .llmreplay/demo --request .llmreplay/demo/requests/<id>.json
 ```
 
-## Free stack (local Ollama + CCR)
-
-```bash
-llmreplay test-stack up
-llmreplay test-stack status          # exit 4 if Ollama down
-eval "$(llmreplay keys create --free --print-env)"
-llmreplay record --free --cassette .llmreplay/demo
-# agent turn with env from --print-env
-llmreplay replay --cassette .llmreplay/demo --profile ci
-```
-
-Details: [free-test-stack.md](free-test-stack.md). Integrations: [integrations/claude-code.md](integrations/claude-code.md), [integrations/codex.md](integrations/codex.md).
+See [free-test-stack.md](free-test-stack.md), [integrations/claude-code.md](integrations/claude-code.md).

@@ -11,7 +11,8 @@ Target acknowledgment: **5 business days**.
 - Cassettes MUST be scrubbed before sharing (`scrub` class + residual scan).
 - Never commit `.env`, API keys, or raw production recordings.
 - Diagnostic `bundle` defaults exclude bodies; opt-in only after preview.
-- HMAC keys stay in keyring / `LLMREPLAY_HMAC_KEY` — never in git.
+- HMAC keys: use OS keyring / `LLMREPLAY_HMAC_KEY` for real work. Never commit production HMAC keys.
+- CI generates an **ephemeral per-job** HMAC via `openssl rand` for hermetic scrub stability inside that job only (not a shared production secret).
 
 ## Scope
 

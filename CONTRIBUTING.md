@@ -19,6 +19,8 @@ ruff check src tests
 python -m llmreplay.cli.main docs gen --check --output docs/reference/cli.md
 pytest -q
 bash scripts/mutation_gate.sh
+bash scripts/repro_stress.sh
+bash scripts/smoke.sh
 bash scripts/release_smoke.sh
 ```
 

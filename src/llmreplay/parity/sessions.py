@@ -354,6 +354,68 @@ def openai_chat_tool_chain_session() -> ProtocolSession:
     )
 
 
+def openai_parallel_tools_session() -> ProtocolSession:
+    """Two parallel tool_calls; tool role messages may arrive in any order."""
+    assistant_msg = {
+        "role": "assistant",
+        "tool_calls": [
+            {
+                "id": "call_a",
+                "type": "function",
+                "function": {"name": "Read", "arguments": '{"path":"a.py"}'},
+            },
+            {
+                "id": "call_b",
+                "type": "function",
+                "function": {"name": "Bash", "arguments": '{"command":"pwd"}'},
+            },
+        ],
+    }
+    t1_req = {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {},
+        "body": {
+            "model": "gpt-test",
+            "messages": [{"role": "user", "content": "inspect a.py and cwd"}],
+        },
+    }
+    t1_resp = {
+        "id": "chat_p1",
+        "choices": [{"message": assistant_msg, "finish_reason": "tool_calls"}],
+    }
+    t2_req = {
+        "method": "POST",
+        "path": "/v1/chat/completions",
+        "headers": {},
+        "body": {
+            "model": "gpt-test",
+            "messages": [
+                {"role": "user", "content": "inspect a.py and cwd"},
+                assistant_msg,
+                {"role": "tool", "tool_call_id": "call_b", "content": "/ws"},
+                {"role": "tool", "tool_call_id": "call_a", "content": "print(1)"},
+            ],
+        },
+    }
+    t2_resp = {
+        "id": "chat_p2",
+        "choices": [
+            {
+                "message": {"role": "assistant", "content": "a.py ok; cwd=/ws"},
+                "finish_reason": "stop",
+            }
+        ],
+    }
+    return ProtocolSession(
+        agent="codex",
+        turns=[
+            Turn(request=t1_req, response=t1_resp),
+            Turn(request=t2_req, response=t2_resp),
+        ],
+    )
+
+
 def codex_responses_session() -> ProtocolSession:
     """Two-turn OpenAI Responses with previous_response_id."""
     turn1_req = {

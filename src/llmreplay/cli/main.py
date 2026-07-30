@@ -160,11 +160,15 @@ def proxy(
     port: Annotated[int, typer.Option("--port")] = 7432,
     profile: Annotated[str, typer.Option("--profile")] = "local",
     config_file: Annotated[Path | None, typer.Option("--config")] = None,
+    free: Annotated[
+        bool,
+        typer.Option("--free", help="Require llmreplay-free-* Authorization"),
+    ] = False,
     allow_remote: Annotated[
         bool,
         typer.Option(
             "--allow-remote",
-            help="Allow non-loopback --host in replay (dangerous; no auth)",
+            help="Allow non-loopback --host (requires --free)",
         ),
     ] = False,
 ) -> None:
@@ -178,6 +182,7 @@ def proxy(
             port=port,
             profile=profile,
             config_file=config_file,
+            free_mode=free,
             allow_remote=allow_remote,
         )
     except (ValidationError, ValueError) as exc:
@@ -207,7 +212,7 @@ def record(
         bool,
         typer.Option(
             "--allow-remote",
-            help="Allow non-loopback --host (dangerous; open forward proxy)",
+            help="Allow non-loopback --host (requires --free; dangerous)",
         ),
     ] = False,
 ) -> None:
@@ -261,7 +266,7 @@ def replay(
         bool,
         typer.Option(
             "--allow-remote",
-            help="Allow non-loopback --host (dangerous; no auth)",
+            help="Allow non-loopback --host (requires --free)",
         ),
     ] = False,
     allow_live: Annotated[

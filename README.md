@@ -55,7 +55,9 @@ Free CCR+Ollama: [docs/free-test-stack.md](docs/free-test-stack.md). Longer path
 
 ## Testing & validation
 
-Hermetic gates (same as CI — no paid APIs, no live Ollama required):
+### CI-required (PR / push)
+
+Same as `.github/workflows/ci.yml` (HMAC is generated per job in CI):
 
 ```bash
 export LLMREPLAY_HMAC_KEY=dev-local-hmac
@@ -64,21 +66,20 @@ export LLMREPLAY_CI=1
 ruff check src tests
 python -m llmreplay.cli.main docs gen --check --output docs/reference/cli.md
 pytest -q
-bash scripts/mutation_gate.sh      # >=95% coverage on critical modules
-bash scripts/release_smoke.sh      # clean venv install + offline fixture replay
-bash scripts/smoke.sh              # in-process record→replay smoke
+bash scripts/mutation_gate.sh      # coverage floor (>=95%); not mutmut
 bash scripts/repro_stress.sh       # multi-tool chains + 10× replay identity
+bash scripts/smoke.sh              # fake-upstream record→replay
+bash scripts/release_smoke.sh      # clean venv install + offline fixture
 ```
 
 | Check | What it proves |
 |---|---|
-| `pytest -q` | Unit + contract suite (`tests/`) |
-| `mutation_gate.sh` | Coverage floor on match/scrub/store/migrate/sse/session/hooks |
-| `release_smoke.sh` | Installable package; offline `replay --check` on fixture |
+| `pytest -q` | Unit + contract suite |
+| `mutation_gate.sh` | Coverage floor on critical modules |
+| `repro_stress.sh` | Parallel tools, chains, OpenAI tools, 10× identical replay |
 | `smoke.sh` | End-to-end record→replay with fake upstream |
-| `repro_stress.sh` | Parallel tools, 3-turn chains, OpenAI tools, 10× identical replay |
+| `release_smoke.sh` | Installable package; offline fixture replay |
 | `docs gen --check` | Generated CLI reference is not stale |
-| `ruff check` | Lint |
 
 CI matrix: Ubuntu + macOS × Python 3.12/3.13. Details: [docs/ci.md](docs/ci.md).
 

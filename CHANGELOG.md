@@ -8,6 +8,7 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/). Cassette `sc
 
 ### Added
 
+- C9: Multi-turn Claude/Codex parity harness + goldens; `examples/claude-code-hello` + `codex-hello`; Codex integration docs.
 - C8: `fork` / `tweak` / `sticky` / `template` allowlist; `debug_sticky` profile; fork-tweak docs.
 - C7: Claude Code hooks (`hooks install|verify|decide`), digests, decision force on replay, integration docs.
 - C6: Workspace FS snapshots (`snapshot create|restore`), denylist, path-traversal guards, `docs/concepts/snapshots.md`.

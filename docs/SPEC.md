@@ -96,6 +96,12 @@ Default synthesize valid SSE from final message (same tool IDs / block order). T
 - Template field class uses allowlisted materializers only (`uuid.v4`, `path_rebase`); unknown names MUST fail.
 - `fork --seq N` shares prefix transactions and assigns a new `run_id`; `tweak` invalidates the suffix.
 
+## S10 addendum — agent parity
+
+- Claude Messages multi-turn: `tool_use` / `tool_result` ids are static wire literals.
+- Codex Responses: `previous_response_id` is static when present.
+- Hermetic goldens live under `tests/test_c9_parity.py`; examples under `examples/claude-code-hello` and `examples/codex-hello`.
+
 ## S9–S18
 
 See DESIGN.md Normative SPEC sections for Ollama degraded mode, agent matrix, nested sessions, hermetic pins, resource limits, profile precedence, compatibility, threat model, concurrency.

@@ -16,7 +16,7 @@
 | C6 FS snapshots | **done** | `a9d38cb` | tar.zst + denylist + restore |
 | C7 Hooks | **done** | `e4ce54a` | install/verify/decide + digests |
 | C8 Tweak/fork/sticky | **done** | `3e8eaa8` | fork/tweak/sticky/templates |
-| C9 Agent parity | planned | | |
+| C9 Agent parity | **done** | (pending commit) | multi-turn Claude+Codex goldens |
 | C10 Migrate + release | planned | | |
 
 **Rule:** Update this table in the same PR that completes a chunk. Every chunk needs tests + **cheap-model** review before push (see [docs/dev/coding-standards.md](docs/dev/coding-standards.md); **no Opus for routine review**).
@@ -519,10 +519,11 @@ flowchart TD
 **Depends:** C6, C7, C8
 
 **Acceptance:**
-- Protocol harness multi-turn Claude + Codex goldens
+- Protocol harness multi-turn Claude + Codex goldens (hermetic CI)
 - `examples/claude-code-hello` + `examples/codex-hello` documented
 - Integration docs complete; troubleshooting for ID desync / path pin
-- Success criteria: both agents record/replay under free stack (nightly)
+- Nightly free-stack live agent smoke deferred to C10 scheduling (optional PR label)
+
 
 ### C10 — Migrate + release (S)
 

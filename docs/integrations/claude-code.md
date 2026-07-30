@@ -38,4 +38,14 @@ export LLMREPLAY_HOOK_MODE=replay
 llmreplay hooks verify --profile ci
 ```
 
-Denied tools are forced from the cassette decision log (`hooks/decisions.jsonl`); live tool execution is stubbed.
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Tool ID desync on replay | Re-record; IDs are wire literals + `tool_id_map` |
+| Hook digest mismatch | `llmreplay hooks verify --profile ci` |
+| Path pin drift | `llmreplay template path_rebase` / sandbox env paths |
+
+Denied tools are forced from `hooks/decisions.jsonl`; live execution is stubbed on replay.
+
+Hermetic multi-turn goldens: `tests/test_c9_parity.py`. Example walkthrough: `examples/claude-code-hello/`.

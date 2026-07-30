@@ -50,6 +50,9 @@ dev = [
 [project.scripts]
 llmreplay = "llmreplay.cli.main:app"
 
+[project.entry-points.pytest11]
+llmreplay = "llmreplay.pytest_plugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/llmreplay"]
 
@@ -66,6 +69,7 @@ testpaths = ["tests"]
 markers = [
   "unit: fast unit tests",
   "contract: schema/protocol contract tests",
+  "llmreplay(cassette, profile, allow_live): replay from an LLMReplay cassette",
 ]
 
 [tool.ruff]

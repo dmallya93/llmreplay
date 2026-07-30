@@ -90,6 +90,12 @@ Default synthesize valid SSE from final message (same tool IDs / block order). T
 - Record `hook_digests` SHA-256 of hook script bytes; `ci`/`strict` → exit `HOOK_OR_POLICY_DIVERGENCE` (6) on digest mismatch (`llmreplay hooks verify`).
 - Recorded decisions in `hooks/decisions.jsonl` are forced on replay; denied tools use a stub result.
 
+## S15 addendum — sticky / templates
+
+- `debug_sticky` profile may set `sticky_writeback: true`; `ci`/`strict` MUST reject sticky writeback.
+- Template field class uses allowlisted materializers only (`uuid.v4`, `path_rebase`); unknown names MUST fail.
+- `fork --seq N` shares prefix transactions and assigns a new `run_id`; `tweak` invalidates the suffix.
+
 ## S9–S18
 
 See DESIGN.md Normative SPEC sections for Ollama degraded mode, agent matrix, nested sessions, hermetic pins, resource limits, profile precedence, compatibility, threat model, concurrency.

@@ -8,6 +8,7 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/). Cassette `sc
 
 ### Added
 
+- C8: `fork` / `tweak` / `sticky` / `template` allowlist; `debug_sticky` profile; fork-tweak docs.
 - C7: Claude Code hooks (`hooks install|verify|decide`), digests, decision force on replay, integration docs.
 - C6: Workspace FS snapshots (`snapshot create|restore`), denylist, path-traversal guards, `docs/concepts/snapshots.md`.
 - C5: Free test-stack (`test-stack up/down/status`), localhost free keys, CCR config helper, `scripts/smoke.sh`, free-test-stack docs.

@@ -49,6 +49,7 @@ class LLMReplayFileConfig(BaseModel):
             "local": ProfileConfig(ignore_drift="warn"),
             "ci": ProfileConfig(ignore_drift="fail", sticky_writeback=False),
             "strict": ProfileConfig(ignore_drift="fail", sticky_writeback=False),
+            "debug_sticky": ProfileConfig(ignore_drift="warn", sticky_writeback=True),
         }
     )
     tools: dict[str, dict[str, Any]] = Field(default_factory=dict)

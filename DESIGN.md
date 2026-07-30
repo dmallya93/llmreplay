@@ -15,7 +15,7 @@
 | C5 Free CCR+Ollama stack | **done** | `ddd979c` | test-stack + free keys + smoke |
 | C6 FS snapshots | **done** | `a9d38cb` | tar.zst + denylist + restore |
 | C7 Hooks | **done** | `e4ce54a` | install/verify/decide + digests |
-| C8 Tweak/fork/sticky | planned | | |
+| C8 Tweak/fork/sticky | **done** | (pending commit) | fork/tweak/sticky/templates |
 | C9 Agent parity | planned | | |
 | C10 Migrate + release | planned | | |
 

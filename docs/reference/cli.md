@@ -32,6 +32,15 @@ Options:
 
 List stable process exit codes.
 
+### `llmreplay fork`
+
+Fork a cassette at seq N into a new run_id (shared prefix, drop suffix).
+
+Options:
+- `--cassette`: 
+- `--dest`: 
+- `--seq`: Fork before this transaction index
+
 ### `llmreplay hooks`
 
 Claude Code hook install/verify/decide (S12).
@@ -102,9 +111,41 @@ Options:
 
 Workspace filesystem snapshots (SPEC S7).
 
+### `llmreplay sticky`
+
+Debug sticky writeback of a mismatch (forbidden in ci/strict).
+
+Options:
+- `--cassette`: 
+- `--profile`: 
+- `--seq`: 
+- `--field`: 
+- `--value`: 
+- `--config`: 
+
+### `llmreplay template`
+
+Apply an allowlisted template materializer (or list them).
+
+Options:
+- `name`: Materializer name or 'list'
+- `--value`: 
+- `--from`: 
+- `--to`: 
+
 ### `llmreplay test-stack`
 
 Free CCR+Ollama test-stack (SPEC S8).
+
+### `llmreplay tweak`
+
+Patch a request field at seq and invalidate later transactions.
+
+Options:
+- `--cassette`: 
+- `--seq`: 
+- `--field`: 
+- `--value`: 
 
 ### `llmreplay validate`
 

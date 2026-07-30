@@ -21,6 +21,10 @@ from llmreplay.diagnose.why import diagnose_miss, load_request_event
 from llmreplay.hooks.digest import verify_hook_digests
 from llmreplay.hooks.install import install_claude_hooks
 from llmreplay.hooks.runtime import run_hook_main
+from llmreplay.lineage.fork import fork_cassette
+from llmreplay.lineage.sticky import maybe_sticky_write
+from llmreplay.lineage.templates import apply_materializer, list_materializers
+from llmreplay.lineage.tweak import tweak_transaction
 from llmreplay.proxy.app import create_app
 from llmreplay.proxy.config import ProxyConfig
 from llmreplay.snapshot.engine import create_snapshot, extensions_fs_payload, restore_snapshot
@@ -555,6 +559,106 @@ def hooks_decide(
     """Read one hook JSON from stdin and emit a decision line (for wrapper scripts)."""
     code = run_hook_main(mode=mode)
     raise typer.Exit(code)
+
+
+@app.command()
+def fork(
+    cassette: Annotated[Path, typer.Option("--cassette")] = Path(".llmreplay/cassette"),
+    dest: Annotated[Path, typer.Option("--dest")] = Path(".llmreplay/fork"),
+    seq: Annotated[int, typer.Option("--seq", help="Fork before this transaction index")] = 0,
+) -> None:
+    """Fork a cassette at seq N into a new run_id (shared prefix, drop suffix)."""
+    try:
+        run_id, manifest = fork_cassette(cassette, dest, seq=seq)
+    except (OSError, ValueError, FileExistsError) as exc:
+        typer.echo(str(exc), err=True)
+        _footer(ExitCode.SCHEMA_OR_REPAIR_REQUIRED)
+        raise typer.Exit(ExitCode.SCHEMA_OR_REPAIR_REQUIRED) from exc
+    typer.echo(
+        json.dumps(
+            {
+                "run_id": run_id,
+                "transactions": len(manifest.transactions),
+                "dest": str(dest),
+            },
+            indent=2,
+        )
+    )
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@app.command()
+def tweak(
+    cassette: Annotated[Path, typer.Option("--cassette")] = Path(".llmreplay/cassette"),
+    seq: Annotated[int, typer.Option("--seq")] = 0,
+    field: Annotated[str, typer.Option("--field")] = "model",
+    value: Annotated[str, typer.Option("--value")] = "",
+) -> None:
+    """Patch a request field at seq and invalidate later transactions."""
+    try:
+        result = tweak_transaction(cassette, seq=seq, field=field, value=value)
+    except (OSError, IndexError, KeyError) as exc:
+        typer.echo(str(exc), err=True)
+        _footer(ExitCode.SCHEMA_OR_REPAIR_REQUIRED)
+        raise typer.Exit(ExitCode.SCHEMA_OR_REPAIR_REQUIRED) from exc
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@app.command()
+def sticky(
+    cassette: Annotated[Path, typer.Option("--cassette")] = Path(".llmreplay/cassette"),
+    profile: Annotated[str, typer.Option("--profile")] = "debug_sticky",
+    seq: Annotated[int, typer.Option("--seq")] = 0,
+    field: Annotated[str, typer.Option("--field")] = "model",
+    value: Annotated[str, typer.Option("--value")] = "",
+    config_file: Annotated[Path | None, typer.Option("--config")] = None,
+) -> None:
+    """Debug sticky writeback of a mismatch (forbidden in ci/strict)."""
+    result = maybe_sticky_write(
+        cassette,
+        profile=profile,
+        seq=seq,
+        field=field,
+        value=value,
+        config_path=config_file,
+    )
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+    if not result.applied:
+        _footer(ExitCode.HOOK_OR_POLICY_DIVERGENCE)
+        raise typer.Exit(ExitCode.HOOK_OR_POLICY_DIVERGENCE)
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
+
+
+@app.command("template")
+def template_cmd(
+    name: Annotated[str, typer.Argument(help="Materializer name or 'list'")],
+    value: Annotated[str, typer.Option("--value")] = "",
+    from_path: Annotated[str | None, typer.Option("--from")] = None,
+    to_path: Annotated[str | None, typer.Option("--to")] = None,
+) -> None:
+    """Apply an allowlisted template materializer (or list them)."""
+    if name == "list":
+        typer.echo(json.dumps(list_materializers(), indent=2))
+        _footer(ExitCode.SUCCESS)
+        raise typer.Exit(ExitCode.SUCCESS)
+    ctx: dict[str, object] = {}
+    if from_path is not None:
+        ctx["from"] = from_path
+    if to_path is not None:
+        ctx["to"] = to_path
+    try:
+        result = apply_materializer(name, value, ctx)
+    except KeyError as exc:
+        typer.echo(str(exc), err=True)
+        _footer(ExitCode.ROUTE_OR_PROTOCOL)
+        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL) from exc
+    typer.echo(json.dumps(result.model_dump(mode="json"), indent=2))
+    _footer(ExitCode.SUCCESS)
+    raise typer.Exit(ExitCode.SUCCESS)
 
 
 if __name__ == "__main__":

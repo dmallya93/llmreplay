@@ -15,7 +15,7 @@ on:
 
 jobs:
   build-publish:
-    if: github.event.inputs.confirm == "publish"
+    if: github.event.inputs.confirm == 'publish'
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

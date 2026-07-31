@@ -257,6 +257,7 @@ No Ollama, no paid APIs, no network — pure in-process replay.
 | **Tutorials** | [Start here](docs/tutorials/README.md) — first cassette → miss → CI → pytest → fork |
 | **Demo (5 min)** | [Scripted walkthrough](docs/demo.md) for talks / lunch-and-learns |
 | **Case studies** | [When it pays off](docs/case-studies.md) — CI cost, pytest mocks, turn-7 bugs |
+| **Share / launch** | [Paste-ready Show HN + Awesome PR copy](docs/launch-copy.md) |
 
 ---
 

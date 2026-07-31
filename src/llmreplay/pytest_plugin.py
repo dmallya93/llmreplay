@@ -62,5 +62,7 @@ async def llmreplay_cassette(request: pytest.FixtureRequest) -> AsyncIterator[ht
         allow_live=allow_live,
     )
     client = httpx.AsyncClient(transport=transport, base_url="http://llmreplay")
-    yield client
-    await client.aclose()
+    try:
+        yield client
+    finally:
+        await client.aclose()

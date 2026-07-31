@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Render short demo GIFs with VHS (https://github.com/charmbracelet/vhs).
+# Run from the repo root (or set LLMREPLAY_ROOT to the checkout path).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -14,6 +15,7 @@ if ! command -v vhs >/dev/null 2>&1; then
   exit 1
 fi
 
+export LLMREPLAY_ROOT="$ROOT"
 export LLMREPLAY_HMAC_KEY="${LLMREPLAY_HMAC_KEY:-dev-local-hmac}"
 export PATH="$ROOT/.venv/bin:/opt/homebrew/bin:$PATH"
 

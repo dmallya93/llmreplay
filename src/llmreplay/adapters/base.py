@@ -15,9 +15,17 @@ class ProtocolAdapter(Protocol):
         ...
 
     def sort_tools_in_messages(self, messages: list[Any]) -> list[Any]:
-        """Sort parallel tool blocks so match key is order-insensitive."""
+        """Sort parallel tool blocks so match key is order-insensitive.
+
+        Library helper for protocol-specific sorting. The match pipeline
+        (``core.match``) still owns hashing via ``_sort_tools_in_tree``;
+        keep these implementations aligned with that path.
+        """
         ...
 
     def synthesize_sse(self, message: dict[str, Any]) -> bytes:
-        """Build a minimal valid SSE body from a stored final JSON message."""
+        """Build a minimal valid SSE body from a stored final JSON message.
+
+        Used by the proxy when streaming a cassette hit / recorded response.
+        """
         ...

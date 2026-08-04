@@ -146,7 +146,7 @@ def run_demo(*, cassette_dir: Path | None = None) -> int:
         print("✓ Done. Start→end in one terminal.")
         print("")
         print("Next — same shape with a real agent (still one terminal):")
-        print(f"  # HMAC already set for this shell ({DEFAULT_LOCAL_HMAC})")
+        print(f"  # llmreplay run auto-sets LLMREPLAY_HMAC_KEY={DEFAULT_LOCAL_HMAC} if unset")
         print("  # keep your ANTHROPIC_API_KEY in the environment")
         print("  llmreplay run --mode record --cassette .llmreplay/demo \\")
         print("    --upstream https://api.anthropic.com -- claude --print 'say hi'")

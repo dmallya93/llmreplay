@@ -19,9 +19,9 @@ Hands-on guides for humans and agents. Start at the top; skip ahead if you alrea
 ```
   Journey map
 
-  smoke.sh ──► first cassette ──► why / miss ──► CI goldens
-                     │                              │
-                     └────────► pytest ◄────────────┘
-                                   │
-                              fork / tweak
+  llmreplay demo ──► first cassette ──► why / miss ──► CI goldens
+         │                  │                              │
+         │                  └────────► pytest ◄────────────┘
+         │                                 │
+         └──── one terminal ───────── fork / tweak
 ```

@@ -1,4 +1,4 @@
-# LLMReplay one-liner install + doctor (shortest hero loop)
+# LLMReplay hero — one terminal start→end
 Output docs/assets/demo-hero.gif
 
 Require llmreplay
@@ -13,7 +13,7 @@ Set PlaybackSpeed 1.15
 Set WindowBar Colorful
 
 Hide
-Type "cd \"${LLMREPLAY_ROOT:-$PWD}\" && source .venv/bin/activate && export LLMREPLAY_HMAC_KEY=dev-local-hmac && clear"
+Type "source .venv/bin/activate && clear"
 Enter
 Sleep 500ms
 Show
@@ -21,15 +21,9 @@ Show
 Type "echo 'pip install coding-agent-vcr  # CLI: llmreplay'"
 Enter
 Sleep 700ms
-Type "export LLMREPLAY_HMAC_KEY=dev-local-hmac"
+Type "llmreplay demo"
 Enter
-Sleep 400ms
-Type "llmreplay doctor"
-Enter
-Sleep 3s
-Type "./scripts/demo_record.sh"
-Enter
-Sleep 5s
-Type "# offline. zero tokens."
+Sleep 6s
+Type "# one terminal. no keys. gateway included."
 Enter
 Sleep 1.5s

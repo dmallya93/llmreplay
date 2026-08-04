@@ -6,9 +6,17 @@ Format inspired by [Keep a Changelog](https://keepachangelog.com/). Cassette `sc
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-08-04
+
 ### Added
 
-- Tutorials, case studies, and VHS terminal demo GIFs (`docs/tutorials/`, `docs/demo.md`, `docs/assets/demo-*.gif`).
+- `llmreplay demo` — one-terminal start→end showcase (stub gateway + record + replay; no API keys / CCR).
+
+### Changed
+
+- `llmreplay run` / local `record` / `replay` auto-set `LLMREPLAY_HMAC_KEY=dev-local-hmac` when unset (stable local default).
+- `llmreplay run --mode record` and `llmreplay record` require explicit `--upstream` or `--free` (no silent CCR `:3456` default).
+- Docs / examples / hero GIF lead with `llmreplay demo` / one-terminal `run`; two-terminal + free-stack demoted.
 
 ## [0.2.0] — 2026-07-30
 

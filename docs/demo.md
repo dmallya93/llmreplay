@@ -36,7 +36,7 @@ Regenerate (requires [VHS](https://github.com/charmbracelet/vhs)):
   │  DEMO ARC                                                  │
   │                                                            │
   │  1. Pain (30s)                                             │
-  │  2. Hermetic smoke (60s)                                   │
+  │  2. llmreplay demo (60s) — one terminal, no keys           │
   │  3. Record → replay with run (90s)   [optional if agent]   │
   │  4. Force a miss → why (90s)                               │
   │  5. CI punchline (30s)                                     │
@@ -71,30 +71,31 @@ Font size up. Terminal theme high-contrast. Have the README open in a browser ta
 
 ---
 
-## 2. Hermetic smoke (60 seconds)
+## 2. `llmreplay demo` (60 seconds)
 
 **Run:**
 
 ```bash
-./scripts/smoke.sh
+llmreplay demo
+# contributors / CI: ./scripts/smoke.sh
 ```
 
 **Say:**
 
-> No Ollama. No Anthropic key. Record then replay against a fake upstream.
-> That green line is the whole product loop.
+> One terminal. No Ollama. No Anthropic key. It starts a stub gateway, records,
+> then replays offline. That green line is the whole product loop.
 
-**Expect:** `smoke ok: record→replay (fake upstream)`
+**Expect:** `✓ Done. Start→end in one terminal.`
 
 ---
 
 ## 3. Optional — real agent with `run` (90 seconds)
 
-Only if Claude Code / Codex is installed and an upstream is up:
+Only if Claude Code / Codex is installed and you have an API key:
 
 ```bash
 llmreplay run --mode record --cassette .llmreplay/demo \
-  --upstream http://127.0.0.1:3456 \
+  --upstream https://api.anthropic.com \
   -- claude --print "say hi in one short sentence"
 
 llmreplay run --mode replay --cassette .llmreplay/demo \
@@ -103,8 +104,8 @@ llmreplay run --mode replay --cassette .llmreplay/demo \
 
 **Say:**
 
-> One command starts the proxy, wires env vars, runs the agent, tears down.
-> Second run is offline — same match key, zero tokens.
+> Same shape as `demo`. One command starts the proxy, wires env vars, runs the
+> agent, tears down. Second run is offline — same match key, zero tokens.
 
 ---
 

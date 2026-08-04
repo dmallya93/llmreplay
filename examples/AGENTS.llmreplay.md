@@ -5,13 +5,15 @@ This project uses [LLMReplay](https://github.com/dmallya93/llmreplay) for hermet
 ## Quick commands
 
 ```bash
-# Install
+# Install + zero-config showcase (one terminal)
 pip install coding-agent-vcr
-export LLMREPLAY_HMAC_KEY=<your-key>   # required for ci/strict profile
+llmreplay demo
 
-# Record an agent turn
+export LLMREPLAY_HMAC_KEY=dev-local-hmac   # stable key; required for ci/strict
+
+# Record an agent turn (one terminal — proxy + child)
 llmreplay run --mode record --cassette .llmreplay/cassette \
-  --upstream http://127.0.0.1:3456 -- claude --print "your prompt"
+  --upstream https://api.anthropic.com -- claude --print "your prompt"
 
 # Replay offline
 llmreplay run --mode replay --cassette .llmreplay/cassette -- claude --print "your prompt"

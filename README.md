@@ -62,50 +62,43 @@ flowchart LR
 
 ## Get started in 30 seconds
 
+**One terminal. No CCR. No free keys. No second window.**
+
 ```bash
-pip install coding-agent-vcr          # PyPI package name
-export LLMREPLAY_HMAC_KEY=dev-local-hmac
-llmreplay doctor                       # verify installation
+pip install coding-agent-vcr
+llmreplay demo
 ```
 
-> **Note:** The CLI and Python import are `llmreplay`. The PyPI name `coding-agent-vcr` was the only one available.
+`demo` starts a stub gateway + the proxy, records one turn, replays it offline, and prints the commands for a real agent. HMAC is set for you if missing.
+
+> **Note:** CLI / import = `llmreplay`. PyPI name = `coding-agent-vcr`.
 
 ---
 
-## Record, replay, diagnose
+## Real agent (still one terminal)
+
+`llmreplay run` **is** the gateway — it starts the proxy, runs your agent, then tears down.
 
 ```bash
-# Record ─────────────────────────────────────────────────────────
+# keep ANTHROPIC_API_KEY in your env (forwarded upstream)
+# local HMAC defaults to dev-local-hmac if unset
+
+# Record (proxy = gateway — starts, runs child, tears down)
 llmreplay run --mode record --cassette .llmreplay/demo \
-  --upstream http://127.0.0.1:3456 -- claude --print
+  --upstream https://api.anthropic.com \
+  -- claude --print "say hi"
 
-# Replay ─────────────────────────────────────────────────────────
-llmreplay run --mode replay --cassette .llmreplay/demo -- claude --print
+# Replay offline
+llmreplay run --mode replay --cassette .llmreplay/demo \
+  -- claude --print "say hi"
 
-# Diagnose miss ──────────────────────────────────────────────────
-llmreplay why --cassette .llmreplay/demo \
-  --request .llmreplay/demo/requests/<tx-id>.json
-
-# CI health check ────────────────────────────────────────────────
+# CI check
 llmreplay replay --check --cassette .llmreplay/demo
 ```
 
-<details><summary><b>Two-terminal workflow (advanced)</b></summary>
+Miss? → `llmreplay why --cassette .llmreplay/demo --request .llmreplay/demo/requests/<tx-id>.json`
 
-```bash
-# Terminal A — start proxy
-llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
-
-# Terminal B — point agent at proxy
-export ANTHROPIC_BASE_URL=http://127.0.0.1:7432
-export ANTHROPIC_API_KEY=unused-local
-claude --print "say hi"
-# then Ctrl-C the proxy
-
-llmreplay replay --cassette .llmreplay/demo --profile ci
-```
-
-</details>
+Full walkthrough: [docs/quickstart.md](docs/quickstart.md).
 
 ---
 

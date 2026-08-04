@@ -128,7 +128,11 @@ def run_doctor(
                 if hmac_set
                 else "LLMREPLAY_HMAC_KEY unset (ephemeral local key; set for CI)"
             ),
-            next=None if hmac_set else "Export LLMREPLAY_HMAC_KEY for stable scrub placeholders",
+            next=(
+                None
+                if hmac_set
+                else "Run `llmreplay demo` or export LLMREPLAY_HMAC_KEY=dev-local-hmac"
+            ),
         )
     )
     stack = stack_status()

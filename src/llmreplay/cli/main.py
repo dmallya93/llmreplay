@@ -11,7 +11,9 @@ import uvicorn
 from pydantic import ValidationError
 
 from llmreplay import __version__
+from llmreplay.cli.demo_cmd import run_demo
 from llmreplay.cli.docs_gen import check_cli_reference, write_cli_reference
+from llmreplay.cli.env_helpers import ensure_local_hmac
 from llmreplay.cli.run_cmd import run_with_proxy
 from llmreplay.core.exit_codes import EXIT_CODE_HELP, ExitCode
 from llmreplay.diagnose.bundle import create_bundle
@@ -75,6 +77,26 @@ def version() -> None:
     typer.echo(__version__)
     _footer(ExitCode.SUCCESS)
     raise typer.Exit(ExitCode.SUCCESS)
+
+
+@app.command()
+def demo(
+    cassette: Annotated[
+        Path,
+        typer.Option("--cassette", help="Where to write the demo cassette"),
+    ] = Path(".llmreplay/demo"),
+) -> None:
+    """One-terminal start→end showcase (no API keys, no CCR, no 2nd terminal).
+
+    Starts a stub LLM gateway, runs record + replay through the proxy, and
+    prints the exact commands to repeat with Claude Code / Codex.
+    """
+    code = run_demo(cassette_dir=cassette)
+    if code == 0:
+        _footer(ExitCode.SUCCESS)
+        raise typer.Exit(ExitCode.SUCCESS)
+    _footer(ExitCode.ROUTE_OR_PROTOCOL)
+    raise typer.Exit(code)
 
 
 @app.command()
@@ -162,23 +184,33 @@ def run(
         typer.Option("--mode", help="record or replay"),
     ] = "replay",
     cassette: Annotated[
-        Path, typer.Option("--cassette", help="Cassette directory path"),
+        Path,
+        typer.Option("--cassette", help="Cassette directory path"),
     ] = Path(".llmreplay/cassette"),
     upstream: Annotated[
         str | None,
-        typer.Option("--upstream", help="Upstream LLM URL (record default: http://127.0.0.1:3456)"),
+        typer.Option(
+            "--upstream",
+            help="Upstream LLM URL (required for record unless --free; e.g. https://api.anthropic.com)",
+        ),
     ] = None,
     port: Annotated[
-        int, typer.Option("--port", help="Local proxy port"),
+        int,
+        typer.Option("--port", help="Local proxy port"),
     ] = 7432,
     profile: Annotated[
-        str, typer.Option("--profile", help="Field-class profile (local, ci, strict)"),
+        str,
+        typer.Option("--profile", help="Field-class profile (local, ci, strict)"),
     ] = "local",
     config_file: Annotated[
-        Path | None, typer.Option("--config", help="Path to llmreplay.yaml"),
+        Path | None,
+        typer.Option("--config", help="Path to llmreplay.yaml"),
     ] = None,
     free: Annotated[
-        bool, typer.Option("--free", help="Use CCR+Ollama free-stack as upstream"),
+        bool,
+        typer.Option(
+            "--free", help="Use CCR+Ollama free-stack as upstream (http://127.0.0.1:3456)"
+        ),
     ] = False,
     allow_live: Annotated[
         bool,
@@ -187,6 +219,9 @@ def run(
 ) -> None:
     """Start proxy, run COMMAND with agent env wired, exit with its code.
 
+    One terminal: proxy starts, COMMAND runs, proxy tears down.
+    Prefer ``llmreplay demo`` for a zero-config start→end showcase.
+
     Usage: llmreplay run [OPTIONS] -- COMMAND [ARGS...]
     """
     command = ctx.args
@@ -194,11 +229,22 @@ def run(
         typer.echo("usage: llmreplay run [OPTIONS] -- COMMAND [ARGS...]", err=True)
         _footer(ExitCode.ROUTE_OR_PROTOCOL)
         raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL)
+    if mode == "record" and not upstream and not free:
+        typer.echo(
+            "record needs --upstream URL (e.g. https://api.anthropic.com) "
+            "or --free (CCR at http://127.0.0.1:3456).\n"
+            "Tip: llmreplay demo  # zero-config one-terminal showcase",
+            err=True,
+        )
+        _footer(ExitCode.ROUTE_OR_PROTOCOL)
+        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL)
+    if profile == "local":
+        ensure_local_hmac(announce=True)
     try:
         config = _proxy_config(
             mode=mode,
             cassette=cassette,
-            upstream=upstream or ("http://127.0.0.1:3456" if mode == "record" else None),
+            upstream=upstream or ("http://127.0.0.1:3456" if free and mode == "record" else None),
             host="127.0.0.1",
             port=port,
             profile=profile,
@@ -282,12 +328,26 @@ def record(
         ),
     ] = False,
 ) -> None:
-    """Start the proxy in record mode (capture upstream traffic into a cassette)."""
+    """Start the proxy in record mode (capture upstream traffic into a cassette).
+
+    Prefer ``llmreplay run`` (one terminal) or ``llmreplay demo`` (zero-config).
+    """
+    if not upstream and not free:
+        typer.echo(
+            "record needs --upstream URL (e.g. https://api.anthropic.com) "
+            "or --free (CCR).\n"
+            "Tip: llmreplay demo  # or: llmreplay run --mode record --upstream … -- CMD",
+            err=True,
+        )
+        _footer(ExitCode.ROUTE_OR_PROTOCOL)
+        raise typer.Exit(ExitCode.ROUTE_OR_PROTOCOL)
+    if profile == "local":
+        ensure_local_hmac(announce=True)
     try:
         config = _proxy_config(
             mode="record",
             cassette=cassette,
-            upstream=upstream or "http://127.0.0.1:3456",
+            upstream=upstream or ("http://127.0.0.1:3456" if free else None),
             host=host,
             port=port,
             profile=profile,
@@ -344,6 +404,8 @@ def replay(
     ] = False,
 ) -> None:
     """Start the proxy in replay mode, or `--check` cassette health offline."""
+    if profile == "local":
+        ensure_local_hmac(announce=True)
     if check:
         report = validate_cassette(cassette)
         typer.echo(json.dumps(report.model_dump(mode="json"), indent=2))

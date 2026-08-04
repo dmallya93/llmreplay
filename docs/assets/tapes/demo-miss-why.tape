@@ -13,7 +13,7 @@ Set PlaybackSpeed 1.1
 Set WindowBar Colorful
 
 Hide
-Type "cd \"${LLMREPLAY_ROOT:-$PWD}\" && source .venv/bin/activate && export LLMREPLAY_HMAC_KEY=dev-local-hmac && clear"
+Type "source .venv/bin/activate && clear"
 Enter
 Sleep 500ms
 Show

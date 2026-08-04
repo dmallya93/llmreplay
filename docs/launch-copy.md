@@ -21,7 +21,7 @@ normalized, secrets HMAC-scrubbed). Misses get a why diff.
 pip install coding-agent-vcr   # CLI: llmreplay
 https://github.com/dmallya93/llmreplay
 
-Hermetic smoke needs no API key: ./scripts/smoke.sh
+One terminal, no API key: llmreplay demo
 ```
 
 ---
@@ -39,8 +39,12 @@ If your agent CI is either (a) flaky live API calls or (b) a mock farm,
 try LLMReplay: VCR-style cassettes for Anthropic Messages + OpenAI Chat/Responses.
 
 pip install coding-agent-vcr
+llmreplay demo          # one terminal, no keys
+
+# then with a real agent:
 export LLMREPLAY_HMAC_KEY=dev-local-hmac
-llmreplay run --mode record --cassette .llmreplay/demo --upstream … -- claude --print "hi"
+llmreplay run --mode record --cassette .llmreplay/demo \
+  --upstream https://api.anthropic.com -- claude --print "hi"
 llmreplay run --mode replay --cassette .llmreplay/demo -- claude --print "hi"
 
 Repo + GIFs: https://github.com/dmallya93/llmreplay

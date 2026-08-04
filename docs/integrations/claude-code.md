@@ -1,28 +1,36 @@
 # Claude Code integration
 
-## Quick start (`llmreplay run`)
-
-Record and replay in a single command — no second terminal needed:
+## Zero-config first
 
 ```bash
-# Record one agent turn
-llmreplay run --mode record --cassette .llmreplay/demo \
-  --upstream http://127.0.0.1:3456 -- claude --print "say hi"
+pip install coding-agent-vcr
+llmreplay demo
+```
 
-# Replay offline
+## Quick start (`llmreplay run`) — one terminal
+
+```bash
+# keep ANTHROPIC_API_KEY in the environment (HMAC defaults locally)
+
+llmreplay run --mode record --cassette .llmreplay/demo \
+  --upstream https://api.anthropic.com -- claude --print "say hi"
+
 llmreplay run --mode replay --cassette .llmreplay/demo -- claude --print "say hi"
 ```
 
-`llmreplay run` starts the proxy, sets `ANTHROPIC_BASE_URL` / `ANTHROPIC_API_KEY` in the child env, runs the command, and exits with the child's exit code.
+`llmreplay run` starts the proxy, sets `ANTHROPIC_BASE_URL` / `OPENAI_BASE_URL` in the child env, runs the command, and exits with the child's exit code. No second terminal.
 
-## Two-terminal workflow
+<details><summary>Advanced: two-terminal proxy (not recommended)</summary>
 
 ```bash
 export ANTHROPIC_BASE_URL=http://127.0.0.1:7432
-llmreplay record --free   # or --upstream <CCR>
+llmreplay record --upstream https://api.anthropic.com
+# other terminal: claude --print "say hi"
 ```
 
-Free keys: `llmreplay keys create --free --print-env`.
+Optional free stack (CCR+Ollama): `--free`. See [free-test-stack.md](../free-test-stack.md).
+
+</details>
 
 ## Hooks (C7 / SPEC S12)
 

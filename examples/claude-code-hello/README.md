@@ -1,15 +1,19 @@
 # Claude Code hello
 
-Minimal wiring (after free stack is up):
+**One terminal. No free keys. No second window.**
 
 ```bash
-llmreplay test-stack up
-llmreplay keys create --free --print-env   # eval exports
-llmreplay hooks install --mode record
-llmreplay record --free --cassette .llmreplay/claude-hello
-# Run Claude Code with ANTHROPIC_BASE_URL pointing at the proxy
-llmreplay replay --cassette .llmreplay/claude-hello --profile ci
+pip install coding-agent-vcr
+llmreplay demo   # zero-config start→end
+
+# Real agent (proxy starts + tears down with the child):
+llmreplay run --mode record --cassette .llmreplay/claude-hello \
+  --upstream https://api.anthropic.com -- claude --print "say hi"
+llmreplay run --mode replay --cassette .llmreplay/claude-hello \
+  -- claude --print "say hi"
 ```
+
+Optional CCR+Ollama free stack: [free-test-stack.md](../../docs/free-test-stack.md).
 
 Protocol goldens for multi-turn tool_use live in `tests/test_c9_parity.py` (hermetic).
 

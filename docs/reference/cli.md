@@ -15,6 +15,13 @@ Options:
 - `--no-scrub`: 
 - `--include-bodies`: 
 
+### `llmreplay demo`
+
+One-terminal start→end showcase (no API keys, no CCR, no 2nd terminal).
+
+Options:
+- `--cassette`: Where to write the demo cassette
+
 ### `llmreplay docs`
 
 Documentation generators.
@@ -129,11 +136,11 @@ Start proxy, run COMMAND with agent env wired, exit with its code.
 Options:
 - `--mode`: record or replay
 - `--cassette`: Cassette directory path
-- `--upstream`: Upstream LLM URL (record default: http://127.0.0.1:3456)
+- `--upstream`: Upstream LLM URL (required for record unless --free; e.g. https://api.anthropic.com)
 - `--port`: Local proxy port
 - `--profile`: Field-class profile (local, ci, strict)
 - `--config`: Path to llmreplay.yaml
-- `--free`: Use CCR+Ollama free-stack as upstream
+- `--free`: Use CCR+Ollama free-stack as upstream (http://127.0.0.1:3456)
 - `--allow-live`: Allow mark-live fields to hit real endpoints
 
 ### `llmreplay snapshot`

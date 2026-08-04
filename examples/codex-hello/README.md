@@ -1,14 +1,19 @@
 # Codex hello
 
+**One terminal. No free keys. No second window.**
+
 ```bash
-llmreplay test-stack up
-llmreplay keys create --free --print-env
-export OPENAI_BASE_URL=http://127.0.0.1:7432/v1
-llmreplay record --free --cassette .llmreplay/codex-hello
-# Run Codex against the proxy
-llmreplay replay --cassette .llmreplay/codex-hello --profile ci
+pip install coding-agent-vcr
+llmreplay demo   # zero-config start→end
+
+llmreplay run --mode record --cassette .llmreplay/codex-hello \
+  --upstream https://api.openai.com -- codex --prompt "say hi"
+llmreplay run --mode replay --cassette .llmreplay/codex-hello \
+  -- codex --prompt "say hi"
 ```
 
 `previous_response_id` is static in the match key — see `tests/test_c9_parity.py`.
+
+Optional CCR+Ollama: [free-test-stack.md](../../docs/free-test-stack.md).
 
 See [codex.md](../../docs/integrations/codex.md).

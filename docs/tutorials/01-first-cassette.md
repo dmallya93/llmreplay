@@ -1,33 +1,45 @@
 # Tutorial 1 — Your first cassette
 
-**Goal:** Record one agent turn, then replay it offline with zero tokens.
+**Goal:** See record → cassette → offline replay in **one terminal**.
 
-**Prereqs:** Python 3.12+, `pip`, and either Claude Code / Codex *or* the hermetic smoke script (no agent required).
-
----
-
-## Option A — Hermetic (no agent, no API)
-
-Best first win. Pure in-process fake upstream.
-
-```bash
-git clone https://github.com/dmallya93/llmreplay.git && cd llmreplay
-pip install -e ".[dev]"
-export LLMREPLAY_HMAC_KEY=dev-local-hmac
-./scripts/smoke.sh
-# ✓ smoke ok: record→replay (fake upstream)
-```
-
-You just proved the full loop: **record → cassette on disk → replay match**.
+**Prereqs:** Python 3.12+, `pip`. No API keys, no CCR, no second window.
 
 ---
 
-## Option B — Real agent (`llmreplay run`)
+## Step 0 — Install and demo (30 seconds)
 
 ```bash
 pip install coding-agent-vcr
-export LLMREPLAY_HMAC_KEY=dev-local-hmac
-llmreplay doctor
+llmreplay demo
+```
+
+What just happened (all in one process tree):
+
+```
+  llmreplay demo
+       │
+       ├─ stub gateway  (fake LLM on a free port)
+       ├─ proxy         (record → cassette)
+       ├─ child agent   (one HTTP turn)
+       ├─ proxy         (replay from cassette)
+       └─ ✓ done
+```
+
+You proved the full loop with **zero** Anthropic keys and **no** multi-terminal setup.
+
+---
+
+## Step 1 — Real agent (still one terminal)
+
+`llmreplay run` **is** the gateway: it starts the proxy, runs your agent, then tears down.
+
+```bash
+# Keep ANTHROPIC_API_KEY in the environment (forwarded upstream).
+# Local HMAC defaults to dev-local-hmac when unset.
+
+llmreplay run --mode record --cassette .llmreplay/demo \
+  --upstream https://api.anthropic.com \
+  -- claude --print "say hello in one sentence"
 ```
 
 ```
@@ -39,42 +51,32 @@ llmreplay doctor
            .llmreplay/demo              SHA-256 match
 ```
 
-### 1. Record
-
-Point `--upstream` at whatever serves Anthropic/OpenAI-compatible traffic
-(CCR, a stub, or a paid API gateway you control):
+Peek:
 
 ```bash
-llmreplay run --mode record --cassette .llmreplay/demo \
-  --upstream http://127.0.0.1:3456 \
-  -- claude --print "say hello in one sentence"
-```
-
-What `run` does for you:
-
-1. Starts a loopback proxy on `:7432`
-2. Sets `ANTHROPIC_BASE_URL` / `OPENAI_BASE_URL` for the child
-3. Runs your command
-4. Tears the proxy down and exits with the child's code
-
-### 2. Peek at the cassette
-
-```bash
-ls .llmreplay/demo/
-# index.json  requests/  responses/  ...
+ls .llmreplay/demo/   # cassette.json, requests/, responses/, …
 llmreplay replay --check --cassette .llmreplay/demo
 ```
-
-### 3. Replay offline
-
-No upstream needed:
+Replay offline (no upstream, no tokens):
 
 ```bash
 llmreplay run --mode replay --cassette .llmreplay/demo \
   -- claude --print "say hello in one sentence"
 ```
 
-Same prompt → same matched response → deterministic agent turn.
+---
+
+## Optional — Hermetic smoke (contributors)
+
+```bash
+git clone https://github.com/dmallya93/llmreplay.git && cd llmreplay
+pip install -e ".[dev]"
+export LLMREPLAY_HMAC_KEY=dev-local-hmac
+./scripts/smoke.sh
+# ✓ smoke ok: record→replay (fake upstream)
+```
+
+Same loop as `llmreplay demo`, used in CI.
 
 ---
 

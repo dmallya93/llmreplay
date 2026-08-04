@@ -1,25 +1,34 @@
 # Codex integration
 
-## Quick start (`llmreplay run`)
+## Zero-config first
 
 ```bash
-# Record one Codex turn
-llmreplay run --mode record --cassette .llmreplay/demo \
-  --upstream http://127.0.0.1:3456 -- codex --prompt "say hi"
+pip install coding-agent-vcr
+llmreplay demo
+```
 
-# Replay offline
+## Quick start (`llmreplay run`) — one terminal
+
+```bash
+# keep OPENAI_API_KEY in the environment (HMAC defaults locally)
+
+llmreplay run --mode record --cassette .llmreplay/demo \
+  --upstream https://api.openai.com -- codex --prompt "say hi"
+
 llmreplay run --mode replay --cassette .llmreplay/demo -- codex --prompt "say hi"
 ```
 
-`llmreplay run` sets `OPENAI_BASE_URL` / `OPENAI_API_KEY` automatically.
+`llmreplay run` sets `OPENAI_BASE_URL` / `OPENAI_API_KEY` for the child and tears the proxy down when the child exits. No second terminal.
 
-## Two-terminal workflow
+<details><summary>Advanced: two-terminal proxy (not recommended)</summary>
 
 ```bash
 export OPENAI_BASE_URL=http://127.0.0.1:7432/v1
 export OPENAI_API_KEY=unused-local
-llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
+llmreplay record --cassette .llmreplay/demo --upstream https://api.openai.com
 ```
+
+</details>
 
 ## Responses API
 
@@ -33,6 +42,4 @@ llmreplay record --cassette .llmreplay/demo --upstream http://127.0.0.1:3456
 |---|---|
 | Miss on turn 2 | Check `previous_response_id` / path pins; run `llmreplay why` |
 | Tool ID desync | Re-record; IDs are wire literals + `tool_id_map` |
-| Path drift across machines | Use `llmreplay template path_rebase` / workspace env paths |
-
-Free stack: [free-test-stack.md](../free-test-stack.md).
+| Empty cassette | Ensure traffic hit the proxy (`OPENAI_BASE_URL` set by `run`) |

@@ -7,7 +7,6 @@ no second terminal.
 
 from __future__ import annotations
 
-import logging
 import socket
 import sys
 import threading
@@ -24,8 +23,6 @@ from llmreplay.cli.env_helpers import DEFAULT_LOCAL_HMAC, ensure_local_hmac
 from llmreplay.cli.run_cmd import free_port, run_with_proxy
 from llmreplay.proxy.config import ProxyConfig
 from llmreplay.store.cassette import CassetteStore
-
-logger = logging.getLogger(__name__)
 
 _DEMO_PROMPT = "say hello in one sentence"
 _DEMO_REPLY = "hello from the cassette"
@@ -54,9 +51,11 @@ def _start_stub_upstream(port: int) -> tuple[uvicorn.Server, threading.Thread]:
     for _ in range(50):
         with socket.socket() as s:
             if s.connect_ex(("127.0.0.1", port)) == 0:
-                break
+                return server, thread
         time.sleep(0.05)
-    return server, thread
+    server.should_exit = True
+    thread.join(timeout=1)
+    raise RuntimeError(f"demo stub gateway did not become ready on 127.0.0.1:{port}")
 
 
 def _agent_command() -> list[str]:
@@ -103,7 +102,12 @@ def run_demo(*, cassette_dir: Path | None = None) -> int:
     print(f"4) Cassette      {cassette}")
     print("")
 
-    stub_server, stub_thread = _start_stub_upstream(stub_port)
+    try:
+        stub_server, stub_thread = _start_stub_upstream(stub_port)
+    except RuntimeError as exc:
+        print(f"✗ {exc}")
+        return 9
+
     try:
         print("▶ RECORD  (proxy starts → child agent → cassette written)")
         record_cfg = ProxyConfig(

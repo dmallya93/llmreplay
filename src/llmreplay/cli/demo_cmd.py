@@ -7,6 +7,7 @@ no second terminal.
 
 from __future__ import annotations
 
+import shutil
 import socket
 import sys
 import threading
@@ -87,9 +88,15 @@ def run_demo(*, cassette_dir: Path | None = None) -> int:
     """Execute the full hermetic demo. Returns process exit code."""
     hmac = ensure_local_hmac()
     cassette = cassette_dir or Path(".llmreplay/demo")
+    # Fresh cassette each run so re-demo stays a clean 1-transaction showcase.
+    if cassette.exists():
+        shutil.rmtree(cassette)
+    cassette.mkdir(parents=True, exist_ok=True)
+
     stub_port = free_port()
     proxy_port = free_port()
     upstream = f"http://127.0.0.1:{stub_port}"
+    cass_disp = str(cassette)
 
     print("")
     print("╔══════════════════════════════════════════════════════════╗")
@@ -99,7 +106,7 @@ def run_demo(*, cassette_dir: Path | None = None) -> int:
     print(f"1) HMAC          LLMREPLAY_HMAC_KEY={hmac}")
     print(f"2) Stub gateway  {upstream}  (fake LLM)")
     print(f"3) Proxy         http://127.0.0.1:{proxy_port}")
-    print(f"4) Cassette      {cassette}")
+    print(f"4) Cassette      {cass_disp}")
     print("")
 
     try:
@@ -144,7 +151,7 @@ def run_demo(*, cassette_dir: Path | None = None) -> int:
 
         store = CassetteStore(cassette)
         n = len(store.load_manifest().transactions)
-        print(f"▶ CHECK   {n} transaction(s) in {cassette}")
+        print(f"▶ CHECK   {n} transaction(s) in {cass_disp}")
 
         print("")
         print("✓ Done. Start→end in one terminal.")
@@ -152,9 +159,9 @@ def run_demo(*, cassette_dir: Path | None = None) -> int:
         print("Next — same shape with a real agent (still one terminal):")
         print(f"  # llmreplay run auto-sets LLMREPLAY_HMAC_KEY={DEFAULT_LOCAL_HMAC} if unset")
         print("  # keep your ANTHROPIC_API_KEY in the environment")
-        print("  llmreplay run --mode record --cassette .llmreplay/demo \\")
+        print(f"  llmreplay run --mode record --cassette {cass_disp} \\")
         print("    --upstream https://api.anthropic.com -- claude --print 'say hi'")
-        print("  llmreplay run --mode replay --cassette .llmreplay/demo \\")
+        print(f"  llmreplay run --mode replay --cassette {cass_disp} \\")
         print("    -- claude --print 'say hi'")
         print("")
         return 0

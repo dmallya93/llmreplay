@@ -95,7 +95,8 @@ def demo(
     if code == 0:
         _footer(ExitCode.SUCCESS)
         raise typer.Exit(ExitCode.SUCCESS)
-    _footer(ExitCode.ROUTE_OR_PROTOCOL)
+    mapped = ExitCode(code) if code in ExitCode.__members__.values() else ExitCode.ROUTE_OR_PROTOCOL
+    _footer(mapped)
     raise typer.Exit(code)
 
 

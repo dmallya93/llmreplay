@@ -33,8 +33,27 @@ def test_run_demo_record_then_replay(tmp_path: Path, monkeypatch: pytest.MonkeyP
     code = run_demo(cassette_dir=cassette)
     assert code == 0
     store = CassetteStore(cassette)
-    assert len(store.load_manifest().transactions) >= 1
+    assert len(store.load_manifest().transactions) == 1
     assert cassette.joinpath("cassette.json").is_file()
+
+
+@pytest.mark.contract
+def test_run_demo_resets_cassette(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Re-running demo must not append duplicate transactions."""
+    monkeypatch.setenv("LLMREPLAY_HMAC_KEY", "reset-hmac")
+    cassette = tmp_path / "demo"
+    assert run_demo(cassette_dir=cassette) == 0
+    assert run_demo(cassette_dir=cassette) == 0
+    assert len(CassetteStore(cassette).load_manifest().transactions) == 1
+
+
+@pytest.mark.unit
+def test_demo_next_steps_use_cassette_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LLMREPLAY_HMAC_KEY", "path-hmac")
+    cassette = tmp_path / "custom-cass"
+    result = CliRunner().invoke(app, ["demo", "--cassette", str(cassette)])
+    assert result.exit_code == 0, result.output
+    assert f"--cassette {cassette}" in result.output
 
 
 @pytest.mark.unit

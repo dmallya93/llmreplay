@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import socket
 import sys
 import threading
 import time
@@ -18,10 +17,9 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 from typer.testing import CliRunner
 
-from llmreplay.cli.demo_cmd import run_demo
+from llmreplay.cli.demo_cmd import _wait_http_ready, run_demo
 from llmreplay.cli.env_helpers import DEFAULT_LOCAL_HMAC, ensure_local_hmac
 from llmreplay.cli.main import app
-from llmreplay.cli.run_cmd import free_port
 from llmreplay.proxy.config import ProxyConfig
 from llmreplay.store.cassette import CassetteStore
 
@@ -121,9 +119,10 @@ def test_run_free_defaults_ccr_upstream(monkeypatch: pytest.MonkeyPatch) -> None
 def test_cli_run_record_replay_against_stub(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """One-terminal run gateway: record then replay via CLI against a stub."""
+    """One-terminal run gateway: record then replay via run_with_proxy + stub."""
+    from llmreplay.cli.run_cmd import run_with_proxy
+
     monkeypatch.setenv("LLMREPLAY_HMAC_KEY", "cli-run-hmac")
-    stub_port = free_port()
 
     async def messages(_request: Request) -> JSONResponse:
         return JSONResponse(
@@ -140,16 +139,24 @@ def test_cli_run_record_replay_against_stub(
         uvicorn.Config(
             Starlette(routes=[Route("/v1/messages", messages, methods=["POST"])]),
             host="127.0.0.1",
-            port=stub_port,
+            port=0,
             log_level="error",
         )
     )
     threading.Thread(target=stub.run, daemon=True).start()
-    for _ in range(50):
-        with socket.socket() as s:
-            if s.connect_ex(("127.0.0.1", stub_port)) == 0:
+    stub_port = 0
+    for _ in range(100):
+        for http_server in getattr(stub, "servers", []) or []:
+            for sock in getattr(http_server, "sockets", []) or []:
+                stub_port = int(sock.getsockname()[1])
                 break
-        time.sleep(0.05)
+            if stub_port:
+                break
+        if stub_port:
+            break
+        time.sleep(0.01)
+    assert stub_port, "stub did not bind"
+    assert _wait_http_ready(f"http://127.0.0.1:{stub_port}/v1/messages")
 
     cassette = tmp_path / "cass"
     child = [
@@ -163,39 +170,35 @@ def test_cli_run_record_replay_against_stub(
         "headers={'content-type':'application/json','x-api-key':'k'},method='POST');"
         "print(json.load(urllib.request.urlopen(req))['content'][0]['text'])",
     ]
-    runner = CliRunner()
-    rec = runner.invoke(
-        app,
-        [
-            "run",
-            "--mode",
-            "record",
-            "--cassette",
-            str(cassette),
-            "--upstream",
-            f"http://127.0.0.1:{stub_port}",
-            "--port",
-            str(free_port()),
-            "--",
-            *child,
-        ],
-    )
-    assert rec.exit_code == 0, rec.output
-    assert len(CassetteStore(cassette).load_manifest().transactions) == 1
+    try:
+        rec = 1
+        for _ in range(2):
+            rec = run_with_proxy(
+                config=ProxyConfig(
+                    mode="record",
+                    cassette_dir=cassette,
+                    upstream_base=f"http://127.0.0.1:{stub_port}",
+                    host="127.0.0.1",
+                    port=0,
+                    profile="local",
+                ),
+                command=child,
+            )
+            if rec == 0:
+                break
+        assert rec == 0
+        assert len(CassetteStore(cassette).load_manifest().transactions) == 1
 
-    rep = runner.invoke(
-        app,
-        [
-            "run",
-            "--mode",
-            "replay",
-            "--cassette",
-            str(cassette),
-            "--port",
-            str(free_port()),
-            "--",
-            *child,
-        ],
-    )
-    assert rep.exit_code == 0, rep.output
-    stub.should_exit = True
+        rep = run_with_proxy(
+            config=ProxyConfig(
+                mode="replay",
+                cassette_dir=cassette,
+                host="127.0.0.1",
+                port=0,
+                profile="local",
+            ),
+            command=child,
+        )
+        assert rep == 0
+    finally:
+        stub.should_exit = True

@@ -51,10 +51,27 @@ def _wait_for_healthz(
 
 
 def free_port() -> int:
-    """Return an ephemeral port the OS guarantees is available."""
+    """Return an ephemeral port the OS guarantees is available.
+
+    Note: this is still a small TOCTOU window between close and a later bind.
+    Prefer ``port=0`` with :func:`run_with_proxy` when possible.
+    """
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
+
+
+def _resolve_bound_port(server: uvicorn.Server, *, timeout: float = 5.0) -> int:
+    """Return the TCP port uvicorn actually bound (supports ``port=0``)."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for http_server in getattr(server, "servers", []) or []:
+            for sock in getattr(http_server, "sockets", []) or []:
+                addr = sock.getsockname()
+                if isinstance(addr, tuple) and len(addr) >= 2:
+                    return int(addr[1])
+        time.sleep(0.01)
+    raise RuntimeError("proxy server did not report a bound port")
 
 
 def run_with_proxy(
@@ -67,10 +84,11 @@ def run_with_proxy(
     """Start the ASGI proxy, run *command* as a subprocess, return its exit code.
 
     The proxy is torn down after the child exits regardless of outcome.
+    Pass ``config.port == 0`` to let the OS assign an ephemeral port (avoids
+    free_port TOCTOU races under parallel server startup).
     """
     config.cassette_dir.mkdir(parents=True, exist_ok=True)
     asgi_app = create_app(config=config, http_client_factory=http_client_factory)
-    base_url = f"http://{config.host}:{config.port}"
 
     uvi_config = uvicorn.Config(
         asgi_app,
@@ -84,6 +102,11 @@ def run_with_proxy(
     server_thread.start()
 
     try:
+        port = config.port if config.port else _resolve_bound_port(server)
+        # Keep config.port in sync so callers/tests can inspect the live port.
+        if config.port == 0:
+            object.__setattr__(config, "port", port)
+        base_url = f"http://{config.host}:{port}"
         _wait_for_healthz(base_url, server_thread)
 
         child_env = {**os.environ, **(extra_env or {})}

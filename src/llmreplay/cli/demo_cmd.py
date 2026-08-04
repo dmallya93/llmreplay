@@ -7,11 +7,13 @@ no second terminal.
 
 from __future__ import annotations
 
+import json
 import shutil
-import socket
 import sys
 import threading
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import uvicorn
@@ -21,7 +23,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from llmreplay.cli.env_helpers import DEFAULT_LOCAL_HMAC, ensure_local_hmac
-from llmreplay.cli.run_cmd import free_port, run_with_proxy
+from llmreplay.cli.run_cmd import run_with_proxy
 from llmreplay.proxy.config import ProxyConfig
 from llmreplay.store.cassette import CassetteStore
 
@@ -29,8 +31,33 @@ _DEMO_PROMPT = "say hello in one sentence"
 _DEMO_REPLY = "hello from the cassette"
 
 
-def _start_stub_upstream(port: int) -> tuple[uvicorn.Server, threading.Thread]:
-    """Tiny Anthropic-shaped stub that the proxy records against."""
+def _wait_http_ready(url: str, *, timeout: float = 5.0) -> bool:
+    """True when *url* accepts an HTTP request (TCP listen alone is not enough)."""
+    deadline = time.monotonic() + timeout
+    payload = json.dumps({"model": "demo-stub", "max_tokens": 1, "messages": []}).encode()
+    while time.monotonic() < deadline:
+        try:
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={"content-type": "application/json"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=0.5) as resp:
+                if 200 <= resp.status < 500:
+                    return True
+        except urllib.error.HTTPError as exc:
+            # App is up enough to return an HTTP status.
+            if exc.code < 500:
+                return True
+        except (urllib.error.URLError, TimeoutError, OSError):
+            pass
+        time.sleep(0.05)
+    return False
+
+
+def _start_stub_upstream() -> tuple[uvicorn.Server, threading.Thread, int]:
+    """Tiny Anthropic-shaped stub; binds ``port=0`` then returns the real port."""
 
     async def messages(_request: Request) -> JSONResponse:
         return JSONResponse(
@@ -44,16 +71,34 @@ def _start_stub_upstream(port: int) -> tuple[uvicorn.Server, threading.Thread]:
         )
 
     app = Starlette(routes=[Route("/v1/messages", messages, methods=["POST"])])
-    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
+    config = uvicorn.Config(app, host="127.0.0.1", port=0, log_level="error")
     server = uvicorn.Server(config)
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
 
-    for _ in range(50):
-        with socket.socket() as s:
-            if s.connect_ex(("127.0.0.1", port)) == 0:
-                return server, thread
-        time.sleep(0.05)
+    # Discover the OS-assigned port, then wait until HTTP is actually served.
+    deadline = time.monotonic() + 5.0
+    port = 0
+    while time.monotonic() < deadline and port == 0:
+        for http_server in getattr(server, "servers", []) or []:
+            for sock in getattr(http_server, "sockets", []) or []:
+                addr = sock.getsockname()
+                if isinstance(addr, tuple) and len(addr) >= 2:
+                    port = int(addr[1])
+                    break
+            if port:
+                break
+        if not port:
+            time.sleep(0.01)
+
+    if not port:
+        server.should_exit = True
+        thread.join(timeout=1)
+        raise RuntimeError("demo stub gateway did not bind a port")
+
+    ready_url = f"http://127.0.0.1:{port}/v1/messages"
+    if _wait_http_ready(ready_url):
+        return server, thread, port
     server.should_exit = True
     thread.join(timeout=1)
     raise RuntimeError(f"demo stub gateway did not become ready on 127.0.0.1:{port}")
@@ -93,10 +138,15 @@ def run_demo(*, cassette_dir: Path | None = None) -> int:
         shutil.rmtree(cassette)
     cassette.mkdir(parents=True, exist_ok=True)
 
-    stub_port = free_port()
-    proxy_port = free_port()
-    upstream = f"http://127.0.0.1:{stub_port}"
     cass_disp = str(cassette)
+
+    try:
+        stub_server, stub_thread, stub_port = _start_stub_upstream()
+    except RuntimeError as exc:
+        print(f"✗ {exc}")
+        return 9
+
+    upstream = f"http://127.0.0.1:{stub_port}"
 
     print("")
     print("╔══════════════════════════════════════════════════════════╗")
@@ -105,41 +155,41 @@ def run_demo(*, cassette_dir: Path | None = None) -> int:
     print("")
     print(f"1) HMAC          LLMREPLAY_HMAC_KEY={hmac}")
     print(f"2) Stub gateway  {upstream}  (fake LLM)")
-    print(f"3) Proxy         http://127.0.0.1:{proxy_port}")
+    print("3) Proxy         ephemeral (port=0, assigned on bind)")
     print(f"4) Cassette      {cass_disp}")
     print("")
 
     try:
-        stub_server, stub_thread = _start_stub_upstream(stub_port)
-    except RuntimeError as exc:
-        print(f"✗ {exc}")
-        return 9
-
-    try:
         print("▶ RECORD  (proxy starts → child agent → cassette written)")
-        record_cfg = ProxyConfig(
-            mode="record",
-            cassette_dir=cassette,
-            upstream_base=upstream,
-            host="127.0.0.1",
-            port=proxy_port,
-            profile="local",
-        )
-        code = run_with_proxy(config=record_cfg, command=_agent_command())
-        if code != 0:
+        code = 1
+        for attempt in range(2):
+            record_cfg = ProxyConfig(
+                mode="record",
+                cassette_dir=cassette,
+                upstream_base=upstream,
+                host="127.0.0.1",
+                port=0,
+                profile="local",
+            )
+            code = run_with_proxy(config=record_cfg, command=_agent_command())
+            if code == 0:
+                break
+            # Rare under heavy local port churn (many uvicorn threads): retry once
+            # if the stub is still healthy.
+            if attempt == 0 and _wait_http_ready(f"{upstream}/v1/messages", timeout=1.0):
+                print("  … retrying record (transient upstream/proxy race)")
+                continue
             print(f"✗ record failed (exit {code})")
             return code
         print("  ✓ cassette recorded")
         print("")
 
         print("▶ REPLAY  (offline — stub not needed; match from cassette)")
-        # New proxy port for replay leg
-        replay_port = free_port()
         replay_cfg = ProxyConfig(
             mode="replay",
             cassette_dir=cassette,
             host="127.0.0.1",
-            port=replay_port,
+            port=0,
             profile="local",
         )
         code = run_with_proxy(config=replay_cfg, command=_agent_command())

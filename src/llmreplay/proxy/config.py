@@ -19,7 +19,8 @@ class ProxyConfig(BaseModel):
     upstream_base: str | None = None
     strict_routes: bool = True
     host: str = "127.0.0.1"
-    port: int = Field(default=7432, ge=1, le=65535)
+    # 0 = OS-assigned ephemeral port (resolved after bind by run_with_proxy).
+    port: int = Field(default=7432, ge=0, le=65535)
     profile: str = "local"
     config_path: Path | None = None
     free_mode: bool = False
